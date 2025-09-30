@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import logging
 from typing import List
 from pydantic import BaseModel, Field
 
@@ -44,3 +45,72 @@ def get_allowed_scopes() -> List[CentralPageScope]:
         List[CentralPageScope]: List of scopes and short descriptions
     """
     return allowed_scopes
+
+
+def run_centralpage(args: List[str]) -> List[str]:
+    """Runs the centralpage command with the given arguments and returns the output.
+
+    This is run on an atlas_al9 wsl2 instance. The following commands are run:
+
+    > setupATLAS
+    > lsetup centralpage
+    > centralpage <args>
+
+    All output is returned.
+
+    Args:
+        args (List[str]): List of arguments to pass to the centralpage command
+
+    Returns:
+        str: Output of the centralpage command
+    """
+    import subprocess
+
+    # Build the command to run on WSL2 instance 'atlas_al9'
+    wsl_cmd = (
+        "export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase &&"
+        " source /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/user/atlasLocalSetup.sh &&"
+        " lsetup centralpage &&"
+        " echo --start-- &&"
+        " centralpage " + " ".join(args)
+    )
+    cmd = [
+        "wsl",
+        "-d",
+        "atlas_al9",
+        "bash",
+        "-l",
+        "-c",
+        wsl_cmd,
+    ]
+
+    # Run the command
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"centralpage command failed with return code {result.returncode}: {result.stderr}"
+        )
+
+    lines = result.stdout.splitlines()
+    try:
+        start_index = lines.index("--start--") + 1
+        output_lines = lines[start_index:]
+    except ValueError:
+        raise ValueError(
+            f"Could not find start marker in centralpage output: {result.stdout}"
+        )
+
+    return output_lines
+
+
+def get_hash_tags(cpa: CentralPageAddress) -> List[str]:
+    """Returns a list of hash tags for a given CentralPageAddress.
+
+    Args:
+        cpa (CentralPageAddress): CentralPageAddress object
+    """
+    # Build the command
+    cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags, "--list_hashtags"]
+    output = run_centralpage(cmd_args)
+    return output.splitlines()

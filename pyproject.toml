@@ -1,0 +1,20 @@
+[project]
+name = "atlas-mcp"
+version = "0.1.0"
+description = "MCP Agents to help with ATLAS physics analysis"
+readme = "README.md"
+authors = [{ name = "Gordon Watts", email = "gwatts@uw.edu" }]
+requires-python = ">=3.13"
+dependencies = [
+    "mcp[cli]>=1.15.0",
+    "pydantic>=2.11.9",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+]
+
+[project.scripts]
+atlas-mcp = "atlas_mcp:main"
+
+[build-system]
+requires = ["uv_build>=0.8.22,<0.9.0"]
+build-backend = "uv_build"

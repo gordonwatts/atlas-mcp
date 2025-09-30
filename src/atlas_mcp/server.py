@@ -1,8 +1,17 @@
+from typing import List
 from mcp.server.fastmcp import FastMCP
 from atlas_mcp import tools as biz
 from atlas_mcp import prompts as myprompts
+import atlas_mcp.central_page as cp
 
-mcp = FastMCP("myServer")
+mcp = FastMCP("atlas_standard_MonteCarlo_catalog")
+
+
+@mcp.tool()
+def get_allowed_scopes() -> List[cp.CentralPageScope]:
+    """Returns a list of allowed scopes/data-taking-periods
+    for the CentralPage MC Sample catalog."""
+    return cp.get_allowed_scopes()
 
 
 # Expose tools with structured output based on type hints/pydantic:

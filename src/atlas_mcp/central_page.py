@@ -14,6 +14,7 @@ class CentralPageScope(BaseModel):
     description: str = Field(description="Description of the scope")
 
 
+# TODO: Figure out how not to hard-wire this!
 allowed_scopes = [
     CentralPageScope(
         scope="mc16_13TeV",

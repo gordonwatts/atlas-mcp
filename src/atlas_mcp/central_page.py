@@ -1,7 +1,12 @@
 from dataclasses import dataclass
-import logging
 from typing import List
 from pydantic import BaseModel, Field
+
+# Disk-backed cache for expensive calls
+from diskcache import Cache
+
+# Initialize cache (default location: .cache directory in project root)
+cache = Cache(".cache")
 
 
 @dataclass
@@ -104,6 +109,7 @@ def run_centralpage(args: List[str]) -> List[str]:
     return output_lines
 
 
+@cache.memoize()
 def get_hash_tags(cpa: CentralPageAddress) -> List[str]:
     """Returns a list of hash tags for a given CentralPageAddress.
 
@@ -113,4 +119,4 @@ def get_hash_tags(cpa: CentralPageAddress) -> List[str]:
     # Build the command
     cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags, "--list_hashtags"]
     output = run_centralpage(cmd_args)
-    return output.splitlines()
+    return output

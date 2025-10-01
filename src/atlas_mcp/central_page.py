@@ -120,3 +120,66 @@ def get_hash_tags(cpa: CentralPageAddress) -> List[str]:
     cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags, "--list_hashtags"]
     output = run_centralpage(cmd_args)
     return output
+
+
+def get_addresses_for_scope(scope: str) -> List[CentralPageAddress]:
+    """Returns a list of CentralPageAddress objects for a given scope.
+
+    These are found by traversing the hash tag tree up to depth 4, which
+    is expensive (so the first time this is called it will take a while!).
+
+    Args:
+        scope (str): Scope name
+    """
+    # As we get each new hash tag in depth (up to 4), we need to generate
+    # the list from central page. This is potentially expensive, so we cache it.
+
+    stack: List[CentralPageAddress] = [CentralPageAddress(scope=scope, hash_tags=[])]
+    result: List[CentralPageAddress] = []
+
+    while len(stack) > 0:
+        current = stack.pop()
+        tags = get_hash_tags(current)
+        if len(tags) == 0:
+            result.append(current)
+        elif len(current.hash_tags) >= 3:
+            for tag in tags:
+                new_address = CentralPageAddress(
+                    scope=current.scope, hash_tags=current.hash_tags + [tag]
+                )
+                result.append(new_address)
+        else:
+            for tag in tags:
+                new_address = CentralPageAddress(
+                    scope=current.scope, hash_tags=current.hash_tags + [tag]
+                )
+                stack.append(new_address)
+
+    return result
+
+
+def get_address_for_keyword(
+    scope: str, keywords: str | List[str]
+) -> List[CentralPageAddress]:
+    """Returns a CentralPageAddress object for a given scope and keyword.
+
+    This searches the hash tag tree up to depth 4 for a hash tag that
+    contains the given keyword. If found, it returns the corresponding
+    CentralPageAddress object. If not found, it returns None.
+
+    Args:
+        scope (str): Scope name
+        keyword (str): Keyword to search for in hash tags
+    """
+    if isinstance(keywords, str):
+        keywords = [keywords]
+    addresses = get_addresses_for_scope(scope)
+    matches = [
+        addr
+        for addr in addresses
+        if all(
+            any(keyword.lower() in tag.lower() for tag in addr.hash_tags)
+            for keyword in keywords
+        )
+    ]
+    return matches

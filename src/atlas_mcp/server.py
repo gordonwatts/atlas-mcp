@@ -14,6 +14,15 @@ def get_allowed_scopes() -> List[cp.CentralPageScope]:
     return cp.get_allowed_scopes()
 
 
+@mcp.tool()
+def get_addresses_for_scope(scope: str) -> List[cp.CentralPageAddress]:
+    """Returns a list of CentralPageAddress for the given scope. This is a good set of keywords
+    for a category search for standard ATLAS background datasets.
+    """
+    addresses = cp.get_addresses_for_scope(scope)
+    return addresses
+
+
 # Expose tools with structured output based on type hints/pydantic:
 @mcp.tool()
 def echo(msg: str) -> biz.Echo:

@@ -9,11 +9,11 @@
                 "atlas_mcp.server"
             ],
             // "envFile": "${workspaceFolder}/.env",
-            "dev": {
-                "watch": [
-                    "src/**/*.py"
-                ]
-            }
+            // "dev": {
+            //     "watch": [
+            //         "src/**/*.py"
+            //     ]
+            // }
         }
     }
 }

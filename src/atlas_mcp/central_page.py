@@ -183,3 +183,14 @@ def get_address_for_keyword(
         )
     ]
     return matches
+
+
+def get_samples_for_address(cpa: CentralPageAddress) -> List[str]:
+    """Returns a list of sample names for a given CentralPageAddress.
+
+    Args:
+        cpa (CentralPageAddress): CentralPageAddress object
+    """
+    cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags]
+    output = run_centralpage(cmd_args)
+    return output

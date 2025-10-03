@@ -4,7 +4,6 @@ from mcp.server.fastmcp import FastMCP
 
 import atlas_mcp.central_page as cp
 from atlas_mcp import prompts as myprompts
-from atlas_mcp import tools as biz
 
 mcp = FastMCP("atlas_standard_MonteCarlo_catalog")
 
@@ -24,6 +23,17 @@ def get_addresses_for_keyword(scope: str, keyword: str) -> List[cp.CentralPageAd
     """
     addresses = cp.get_address_for_keyword(scope, keyword)
     return addresses
+
+
+@mcp.tool()
+def get_samples_for_address(cpa: cp.CentralPageAddress) -> List[str]:
+    """Returns a list of sample names for a given CentralPageAddress.
+    These will be rucio dataset names, for datasets that contains the output of
+    the MC generation step. All samples for this address are returned. Parse the sample
+    names to find the ones required.
+    """
+    samples = cp.get_samples_for_address(cpa)
+    return samples
 
 
 # Optional: register prompts so they appear as /mcp.myServer.greet

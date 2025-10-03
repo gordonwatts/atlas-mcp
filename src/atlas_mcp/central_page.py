@@ -20,6 +20,10 @@ class CentralPageScope(BaseModel):
     description: str = Field(description="Description of the scope")
 
 
+class DIDInfo(BaseModel):
+    did: str = Field(description="Rucio Dataset Identifier")
+
+
 # TODO: Figure out how not to hard-wire this!
 allowed_scopes = [
     CentralPageScope(
@@ -185,8 +189,8 @@ def get_address_for_keyword(
     return matches
 
 
-def get_samples_for_address(cpa: CentralPageAddress) -> List[str]:
-    """Returns a list of sample names for a given CentralPageAddress.
+def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
+    """Returns a list of EVTGEN sample names for a given CentralPageAddress.
 
     Args:
         cpa (CentralPageAddress): CentralPageAddress object
@@ -194,3 +198,18 @@ def get_samples_for_address(cpa: CentralPageAddress) -> List[str]:
     cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags]
     output = run_centralpage(cmd_args)
     return output
+
+
+def get_samples_for_evtgen(evtgen_samples: List[str]) -> List[DIDInfo]:
+    """Returns a list of rucio dataset names for a given list of EVTGEN sample names.
+
+    Args:
+        evtgen_samples (List[str]): List of EVTGEN sample names
+    """
+    result = []
+    for sample in evtgen_samples:
+        
+
+    # Filter to only those that look like rucio dataset names
+    samples = [s for s in evtgen_samples if s.startswith("mc")]
+    return result

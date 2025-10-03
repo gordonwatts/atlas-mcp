@@ -26,13 +26,13 @@ def get_addresses_for_keyword(scope: str, keyword: str) -> List[cp.CentralPageAd
 
 
 @mcp.tool()
-def get_samples_for_address(cpa: cp.CentralPageAddress) -> List[str]:
-    """Returns a list of sample names for a given CentralPageAddress.
+def get_evtgen_for_address(cpa: cp.CentralPageAddress) -> List[str]:
+    """Returns a list of event generator (evtgen) sample names for a given CentralPageAddress.
     These will be rucio dataset names, for datasets that contains the output of
     the MC generation step. All samples for this address are returned. Parse the sample
     names to find the ones required.
     """
-    samples = cp.get_samples_for_address(cpa)
+    samples = cp.get_evtgen_for_address(cpa)
     return samples
 
 

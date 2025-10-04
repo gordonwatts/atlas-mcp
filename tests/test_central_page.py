@@ -1,9 +1,6 @@
-from atlas_mcp.central_page import (
-    get_allowed_scopes,
-    get_hash_tags,
-    CentralPageAddress,
-    run_centralpage,
-)
+from atlas_mcp.central_page import get_allowed_scopes, run_centralpage
+from atlas_mcp import central_page as central_page_mod
+import importlib
 import subprocess
 
 
@@ -17,13 +14,20 @@ def test_get_allowed_scopes():
     assert any(scope.scope == "mc23_13p6TeV" for scope in scopes)
 
 
-def test_get_hash_tags_toplevel(mocker):
+def test_get_hash_tags_toplevel(mocker, monkeypatch, tmp_path):
+    # Set a temporary cache location via env var and reload module so the module
+    # cache uses a per-test directory (avoids touching the user's persistent cache)
+    monkeypatch.setenv("ATLAS_MCP_CACHE_DIR", str(tmp_path / "cache"))
+    importlib.reload(central_page_mod)
+
     # Mock the run_centralpage function to return a known output
     mocker.patch(
         "atlas_mcp.central_page.run_centralpage", return_value="tag1\ntag2\ntag3"
     )
 
-    tags = get_hash_tags(CentralPageAddress(scope="mc20_13TeV", hash_tags=[]))
+    tags = central_page_mod.get_hash_tags(
+        central_page_mod.CentralPageAddress(scope="mc20_13TeV", hash_tags=[])
+    )
     assert tags == ["tag1", "tag2", "tag3"]
 
 

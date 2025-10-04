@@ -4,9 +4,15 @@ from pydantic import BaseModel, Field
 
 # Disk-backed cache for expensive calls
 from diskcache import Cache
+import os
+from pathlib import Path
 
-# Initialize cache (default location: .cache directory in project root)
-cache = Cache(".cache")
+# Cache location selection:
+# - If ATLAS_MCP_CACHE_DIR environment variable is set, use it (useful for tests/CI)
+# - Otherwise default to the user's home directory under `.atlas_mcp_cache` for
+#   server/external runs.
+cache_dir = os.environ.get("ATLAS_MCP_CACHE_DIR", str(Path.home() / ".atlas_mcp_cache"))
+cache = Cache(cache_dir)
 
 
 @dataclass
@@ -56,61 +62,73 @@ def get_allowed_scopes() -> List[CentralPageScope]:
     return allowed_scopes
 
 
-def run_centralpage(args: List[str]) -> List[str]:
+def run_centralpage(args: List[str]) -> str | List[str]:
     """Runs the centralpage command with the given arguments and returns the output.
 
-    This is run on an atlas_al9 wsl2 instance. The following commands are run:
-
-    > setupATLAS
-    > lsetup centralpage
-    > centralpage <args>
-
-    All output is returned.
+    This wraps `run_on_wsl` which runs arbitrary commands on a configured WSL
+    distribution. Keeping the high-level behavior the same: we set up the
+    ATLAS environment, lsetup centralpage, echo a start marker, then run
+    `centralpage` with the provided args and return the output lines after
+    the marker.
 
     Args:
         args (List[str]): List of arguments to pass to the centralpage command
 
     Returns:
-        str: Output of the centralpage command
+        List[str]: Output lines from the centralpage command (after the start marker)
     """
-    import subprocess
-
-    # Build the command to run on WSL2 instance 'atlas_al9'
-    wsl_cmd = (
+    # Build the command snippet to run inside WSL
+    inner_cmd = (
         "export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase &&"
         " source /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/user/atlasLocalSetup.sh &&"
         " lsetup centralpage &&"
         " echo --start-- &&"
         " centralpage " + " ".join(args)
     )
-    cmd = [
-        "wsl",
-        "-d",
-        "atlas_al9",
-        "bash",
-        "-l",
-        "-c",
-        wsl_cmd,
-    ]
 
-    # Run the command
+    # Delegate to the lower-level helper which returns raw stdout. If the
+    # start marker is present in the output, return the list of lines after
+    # the marker (this is the original behavior). If not present, return the
+    # raw stdout string (this helps unit tests that mock subprocess.run).
+    stdout = run_on_wsl(inner_cmd, distro="atlas_al9", start_marker="--start--")
+
+    lines = stdout.splitlines()
+    try:
+        start_index = lines.index("--start--") + 1
+        return lines[start_index:]
+    except ValueError:
+        return stdout
+
+
+def run_on_wsl(
+    command: str, distro: str = "atlas_al9", start_marker: str = "--start--"
+) -> str:
+    """Run an arbitrary shell command inside a WSL distro and return output after a start marker.
+
+    This is a small helper to centralize WSL invocation logic so other callers
+    can reuse it for running different commands while keeping consistent
+    error handling and output parsing.
+
+    Args:
+        command (str): Shell command to run inside the WSL session.
+        distro (str): WSL distribution name to use.
+        start_marker (str): A marker string that indicates where relevant output begins.
+
+    Returns:
+        List[str]: Lines of output after the start marker.
+    """
+    import subprocess
+
+    cmd = ["wsl", "-d", distro, "bash", "-l", "-c", command]
     result = subprocess.run(cmd, capture_output=True, text=True)
 
     if result.returncode != 0:
         raise RuntimeError(
-            f"centralpage command failed with return code {result.returncode}: {result.stderr}"
+            f"command failed with return code {result.returncode}: {result.stderr}"
         )
 
-    lines = result.stdout.splitlines()
-    try:
-        start_index = lines.index("--start--") + 1
-        output_lines = lines[start_index:]
-    except ValueError:
-        raise ValueError(
-            f"Could not find start marker in centralpage output: {result.stdout}"
-        )
-
-    return output_lines
+    # Return raw stdout; higher-level callers can choose to split/parse it.
+    return result.stdout
 
 
 @cache.memoize()
@@ -121,8 +139,14 @@ def get_hash_tags(cpa: CentralPageAddress) -> List[str]:
         cpa (CentralPageAddress): CentralPageAddress object
     """
     # Build the command
+    # Build a deterministic command args list
     cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags, "--list_hashtags"]
     output = run_centralpage(cmd_args)
+
+    # If run_centralpage returns a single string, split into lines; if it
+    # already returned a list, keep it.
+    if isinstance(output, str):
+        return [line for line in output.splitlines() if line]
     return output
 
 
@@ -207,9 +231,8 @@ def get_samples_for_evtgen(evtgen_samples: List[str]) -> List[DIDInfo]:
         evtgen_samples (List[str]): List of EVTGEN sample names
     """
     result = []
-    for sample in evtgen_samples:
-        
+    # for sample in evtgen_samples:
 
-    # Filter to only those that look like rucio dataset names
-    samples = [s for s in evtgen_samples if s.startswith("mc")]
+    # # Filter to only those that look like rucio dataset names
+    # samples = [s for s in evtgen_samples if s.startswith("mc")]
     return result

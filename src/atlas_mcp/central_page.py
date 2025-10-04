@@ -1,11 +1,10 @@
-from dataclasses import dataclass
-from typing import List
-from pydantic import BaseModel, Field
-
-# Disk-backed cache for expensive calls
-from diskcache import Cache
 import os
+from dataclasses import dataclass
 from pathlib import Path
+from typing import List
+
+from diskcache import Cache
+from pydantic import BaseModel, Field
 
 # Cache location selection:
 # - If ATLAS_MCP_CACHE_DIR environment variable is set, use it (useful for tests/CI)
@@ -221,6 +220,8 @@ def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
     """
     cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags]
     output = run_centralpage(cmd_args)
+    if isinstance(output, str):
+        return [line for line in output.splitlines() if line]
     return output
 
 

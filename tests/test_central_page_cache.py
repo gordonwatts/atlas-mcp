@@ -1,4 +1,3 @@
-import pytest
 from atlas_mcp import central_page as central_page_mod
 import importlib
 

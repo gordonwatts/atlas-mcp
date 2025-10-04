@@ -4,6 +4,7 @@
 
 * When adding new functionality, please introduce a simple unit test to test.
 * When tracking down a bug at the request of the user, please generate a test case that triggers the bug before fixing the bug.
+* Linting: both `black` and `flake8` should pass. Lines can be up to 99 characters long.
 
 ## Tests
 

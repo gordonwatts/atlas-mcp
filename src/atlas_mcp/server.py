@@ -36,6 +36,13 @@ def get_evtgen_for_address(cpa: cp.CentralPageAddress) -> List[str]:
     return samples
 
 
+@mcp.tool()
+def get_samples_for_evtgen(evtgen_sample: str) -> List[str]:
+    """Returns a list of rucio dataset names for a given EVTGEN sample name."""
+    results = cp.get_samples_for_evtgen(evtgen_sample)
+    return results
+
+
 # Optional: register prompts so they appear as /mcp.myServer.greet
 myprompts.register(mcp)
 

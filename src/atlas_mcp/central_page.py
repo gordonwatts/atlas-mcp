@@ -96,7 +96,11 @@ def run_centralpage(args: List[str]) -> str | List[str]:
         return stdout
 
 
-def run_in_centralpage_env(command: str, distro: str = "atlas_al9") -> str:
+def run_in_centralpage_env(
+    command: str,
+    distro: str = "atlas_al9",
+    files: Union[Dict[str, Union[str, Path]], None] = None,
+) -> str:
     """Run a command inside WSL after configuring the ATLAS centralpage environment.
 
     This sets up the environment by exporting ATLAS_LOCAL_ROOT_BASE, sourcing
@@ -118,25 +122,19 @@ def run_in_centralpage_env(command: str, distro: str = "atlas_al9") -> str:
 
     # Concatenate environment setup with the requested command
     inner = f"{env_setup} {command}" if command else env_setup
-    return run_on_wsl(inner, distro=distro)
+    return run_on_wsl(inner, distro=distro, files=files)
 
 
 def run_on_wsl(
     command: str,
     distro: str = "atlas_al9",
-    start_marker: str = "--start--",
     files: Union[Dict[str, Union[str, Path]], None] = None,
 ) -> str:
     """Run an arbitrary shell command inside a WSL distro and return raw stdout.
 
-    Note: The ``start_marker`` parameter is ignored and retained only for
-    backward compatibility. Callers that need to split output should do so
-    themselves after receiving the returned string.
-
     Args:
         command (str): Shell command to run inside the WSL session.
         distro (str): WSL distribution name to use.
-        start_marker (str): Deprecated; ignored.
         files (Dict[str, Union[str, Path]], optional): Dictionary of files to copy to /tmp
             in WSL before running the command. Keys are filenames in /tmp, values can be
             strings (content) or Path objects (file paths to copy).
@@ -150,6 +148,15 @@ def run_on_wsl(
     if files:
         for filename, file_data in files.items():
             wsl_path = f"/tmp/{filename}"
+
+            if isinstance(file_data, Path):
+                # File path provided - lets read and write the file.
+                if not file_data.exists():
+                    raise FileNotFoundError(f"File not found: {file_data}")
+
+                # Load the file in as a massive string
+                with open(file_data, "r", encoding="utf-8") as f:
+                    file_data = f.read()
 
             if isinstance(file_data, str):
                 # File content provided as string - write to temp file in WSL
@@ -168,25 +175,6 @@ def run_on_wsl(
                 if copy_result.returncode != 0:
                     raise RuntimeError(
                         f"Failed to copy string content to WSL: {copy_result.stderr}"
-                    )
-            elif isinstance(file_data, Path):
-                # File path provided - copy actual file to WSL
-                if not file_data.exists():
-                    raise FileNotFoundError(f"File not found: {file_data}")
-
-                # Use wsl.exe to copy file from Windows to WSL /tmp
-                copy_cmd = [
-                    "wsl",
-                    "-d",
-                    distro,
-                    "cp",
-                    f"/mnt/c/{str(file_data).replace(':', '').replace('\\', '/')}",
-                    wsl_path,
-                ]
-                copy_result = subprocess.run(copy_cmd, capture_output=True, text=True)
-                if copy_result.returncode != 0:
-                    raise RuntimeError(
-                        f"Failed to copy file {file_data} to WSL: {copy_result.stderr}"
                     )
 
     cmd = ["wsl", "-d", distro, "bash", "-l", "-c", command]
@@ -283,6 +271,7 @@ def get_address_for_keyword(
     return matches
 
 
+@cache.memoize()
 def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
     """Returns a list of EVTGEN sample names for a given CentralPageAddress.
 
@@ -296,15 +285,45 @@ def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
     return output
 
 
-def get_samples_for_evtgen(evtgen_samples: List[str]) -> List[DIDInfo]:
-    """Returns a list of rucio dataset names for a given list of EVTGEN sample names.
+def get_samples_for_evtgen(
+    scope: str, evtgen_sample: str, derivation: str
+) -> List[str]:
+    """Returns a list of rucio dataset names for a given EVTGEN sample.
 
     Args:
-        evtgen_samples (List[str]): List of EVTGEN sample names
+        scope (str): Scope name
+        evtgen_sample (str): EVTGEN sample name
+        derivation (str): Derivation type, e.g. 'PHYS', 'AOD', 'PHYSLITE', 'DAOD_LLP1', etc.
     """
-    result = []
-    # for sample in evtgen_samples:
+    derivation_flag = ""
+    if derivation == "PHYS":
+        derivation_flag = "--phys"
+    elif derivation == "AOD":
+        derivation_flag = "--aod"
+    elif derivation == "PHYSLITE":
+        derivation_flag = "--physlite"
+    elif derivation.startswith("DAOD_"):
+        derivation_flag = f"--out={derivation.upper()}"
+    lines = run_in_centralpage_env(
+        f"echo --start-- && python3 /tmp/data_finder.py --scope {scope} {evtgen_sample} "
+        f"-m {derivation_flag}",
+        files={
+            "data_finder.py": Path(__file__).parent.parent.parent
+            / "scripts"
+            / "dsid_finder"
+            / "data_finder.py",
+            "utils.py": Path(__file__).parent.parent.parent
+            / "scripts"
+            / "dsid_finder"
+            / "utils.py",
+        },
+    )
+    results = []
+    seen_start = False
+    for ln in lines.splitlines():
+        if seen_start:
+            results.append(ln)
+        if "--start--" in ln:
+            seen_start = True
 
-    # # Filter to only those that look like rucio dataset names
-    # samples = [s for s in evtgen_samples if s.startswith("mc")]
-    return result
+    return results

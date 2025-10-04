@@ -74,22 +74,18 @@ def run_centralpage(args: List[str]) -> str | List[str]:
         args (List[str]): List of arguments to pass to the centralpage command
 
     Returns:
-        List[str]: Output lines from the centralpage command (after the start marker)
+        str | List[str]: If the start marker is present, returns the list of lines
+        after the marker. If not present (e.g., in certain mocked or direct
+        subprocess scenarios), returns the raw stdout string.
     """
-    # Build the command snippet to run inside WSL
-    inner_cmd = (
-        "export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase &&"
-        " source /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/user/atlasLocalSetup.sh &&"
-        " lsetup centralpage &&"
-        " echo --start-- &&"
-        " centralpage " + " ".join(args)
-    )
+    # Build the command snippet to run inside WSL (after env setup)
+    inner_cmd = "echo --start-- && centralpage " + " ".join(args)
 
-    # Delegate to the lower-level helper which returns raw stdout. If the
+    # Run inside the centralpage-configured environment. If the
     # start marker is present in the output, return the list of lines after
     # the marker (this is the original behavior). If not present, return the
     # raw stdout string (this helps unit tests that mock subprocess.run).
-    stdout = run_on_wsl(inner_cmd, distro="atlas_al9", start_marker="--start--")
+    stdout = run_in_centralpage_env(inner_cmd)
 
     lines = stdout.splitlines()
     try:
@@ -99,22 +95,47 @@ def run_centralpage(args: List[str]) -> str | List[str]:
         return stdout
 
 
+def run_in_centralpage_env(command: str, distro: str = "atlas_al9") -> str:
+    """Run a command inside WSL after configuring the ATLAS centralpage environment.
+
+    This sets up the environment by exporting ATLAS_LOCAL_ROOT_BASE, sourcing
+    atlasLocalSetup.sh, and performing `lsetup centralpage` before executing
+    the provided command. Returns raw stdout from the execution.
+
+    Args:
+        command (str): The shell snippet to execute after the environment is set up.
+        distro (str): The WSL distribution name.
+
+    Returns:
+        str: Raw stdout from the invoked command.
+    """
+    env_setup = (
+        "export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase &&"
+        " source /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/user/atlasLocalSetup.sh &&"
+        " lsetup centralpage &&"
+    )
+
+    # Concatenate environment setup with the requested command
+    inner = f"{env_setup} {command}" if command else env_setup
+    return run_on_wsl(inner, distro=distro)
+
+
 def run_on_wsl(
     command: str, distro: str = "atlas_al9", start_marker: str = "--start--"
 ) -> str:
-    """Run an arbitrary shell command inside a WSL distro and return output after a start marker.
+    """Run an arbitrary shell command inside a WSL distro and return raw stdout.
 
-    This is a small helper to centralize WSL invocation logic so other callers
-    can reuse it for running different commands while keeping consistent
-    error handling and output parsing.
+    Note: The ``start_marker`` parameter is ignored and retained only for
+    backward compatibility. Callers that need to split output should do so
+    themselves after receiving the returned string.
 
     Args:
         command (str): Shell command to run inside the WSL session.
         distro (str): WSL distribution name to use.
-        start_marker (str): A marker string that indicates where relevant output begins.
+        start_marker (str): Deprecated; ignored.
 
     Returns:
-        List[str]: Lines of output after the start marker.
+        str: Raw stdout from the executed command.
     """
     import subprocess
 

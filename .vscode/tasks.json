@@ -1,0 +1,10 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Test Coverage",
+			"type": "shell",
+			"command": ". ./.venv/scripts/activate.ps1 ; coverage.exe run -m pytest"
+		}
+	]
+}

@@ -1,7 +1,8 @@
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import List, Union, Dict
+import base64
 
 from diskcache import Cache
 from pydantic import BaseModel, Field
@@ -121,7 +122,10 @@ def run_in_centralpage_env(command: str, distro: str = "atlas_al9") -> str:
 
 
 def run_on_wsl(
-    command: str, distro: str = "atlas_al9", start_marker: str = "--start--"
+    command: str,
+    distro: str = "atlas_al9",
+    start_marker: str = "--start--",
+    files: Union[Dict[str, Union[str, Path]], None] = None,
 ) -> str:
     """Run an arbitrary shell command inside a WSL distro and return raw stdout.
 
@@ -133,11 +137,57 @@ def run_on_wsl(
         command (str): Shell command to run inside the WSL session.
         distro (str): WSL distribution name to use.
         start_marker (str): Deprecated; ignored.
+        files (Dict[str, Union[str, Path]], optional): Dictionary of files to copy to /tmp
+            in WSL before running the command. Keys are filenames in /tmp, values can be
+            strings (content) or Path objects (file paths to copy).
 
     Returns:
         str: Raw stdout from the executed command.
     """
     import subprocess
+
+    # If files are provided, copy them to /tmp in WSL first
+    if files:
+        for filename, file_data in files.items():
+            wsl_path = f"/tmp/{filename}"
+
+            if isinstance(file_data, str):
+                # File content provided as string - write to temp file in WSL
+                encoded_content = base64.b64encode(file_data.encode("utf-8")).decode(
+                    "ascii"
+                )
+                copy_cmd = [
+                    "wsl",
+                    "-d",
+                    distro,
+                    "bash",
+                    "-c",
+                    f"echo '{encoded_content}' | base64 -d > {wsl_path}",
+                ]
+                copy_result = subprocess.run(copy_cmd, capture_output=True, text=True)
+                if copy_result.returncode != 0:
+                    raise RuntimeError(
+                        f"Failed to copy string content to WSL: {copy_result.stderr}"
+                    )
+            elif isinstance(file_data, Path):
+                # File path provided - copy actual file to WSL
+                if not file_data.exists():
+                    raise FileNotFoundError(f"File not found: {file_data}")
+
+                # Use wsl.exe to copy file from Windows to WSL /tmp
+                copy_cmd = [
+                    "wsl",
+                    "-d",
+                    distro,
+                    "cp",
+                    f"/mnt/c/{str(file_data).replace(':', '').replace('\\', '/')}",
+                    wsl_path,
+                ]
+                copy_result = subprocess.run(copy_cmd, capture_output=True, text=True)
+                if copy_result.returncode != 0:
+                    raise RuntimeError(
+                        f"Failed to copy file {file_data} to WSL: {copy_result.stderr}"
+                    )
 
     cmd = ["wsl", "-d", distro, "bash", "-l", "-c", command]
     result = subprocess.run(cmd, capture_output=True, text=True)

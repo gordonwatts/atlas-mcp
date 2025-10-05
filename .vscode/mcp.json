@@ -1,0 +1,19 @@
+{
+    "servers": {
+        "atlas_mcp": {
+            "type": "stdio",
+            "command": "uv",
+            "args": [
+                "run",
+                "-m",
+                "atlas_mcp.server"
+            ],
+            // "envFile": "${workspaceFolder}/.env",
+            // "dev": {
+            //     "watch": [
+            //         "src/**/*.py"
+            //     ]
+            // }
+        }
+    }
+}

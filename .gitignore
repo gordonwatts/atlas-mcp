@@ -9,3 +9,5 @@ wheels/
 # Virtual environments
 .venv
 uv.lock
+.cache
+.coverage

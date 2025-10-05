@@ -37,9 +37,18 @@ def get_evtgen_for_address(cpa: cp.CentralPageAddress) -> List[str]:
 
 
 @mcp.tool()
-def get_samples_for_evtgen(evtgen_sample: str) -> List[str]:
-    """Returns a list of rucio dataset names for a given EVTGEN sample name."""
-    results = cp.get_samples_for_evtgen(evtgen_sample)
+def get_samples_for_evtgen(
+    scope: str, evtgen_sample: str, data_tier: str
+) -> List[cp.DIDInfo]:
+    """Returns a list of rucio dataset names of a particlar data_tier for a given EVTGEN sample
+    and scope.
+
+    evtgen_sample should be a valid rucio ID, with EVNT as the data tier.
+
+    data_tier should be "PHYSLITE", "PHYS", "DAOD_LLP1", etc. Default to PHYSLITE unless
+    otherwise requested.
+    """
+    results = cp.get_samples_for_evtgen(scope, evtgen_sample, data_tier)
     return results
 
 

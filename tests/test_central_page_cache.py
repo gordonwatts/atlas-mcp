@@ -10,7 +10,7 @@ def test_get_hash_tags_caching(mocker, monkeypatch, tmp_path):
 
     # Mock run_centralpage to return string output
     mock = mocker.patch(
-        "atlas_mcp.central_page.run_centralpage", return_value="a\nb\nc\n"
+        "atlas_mcp.central_page.run_centralpage", return_value=["a", "b", "c"]
     )
 
     # Construct CentralPageAddress from the reloaded module to match the cached type

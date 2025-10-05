@@ -23,7 +23,7 @@ def test_get_hash_tags_toplevel(mocker, monkeypatch, tmp_path):
 
     # Mock the run_centralpage function to return a known output
     mocker.patch(
-        "atlas_mcp.central_page.run_centralpage", return_value="tag1\ntag2\ntag3"
+        "atlas_mcp.central_page.run_centralpage", return_value=["tag1", "tag2", "tag3"]
     )
 
     tags = central_page_mod.get_hash_tags(
@@ -45,7 +45,7 @@ def test_run_centralpage(mocker):
     )
 
     output = run_centralpage(["list-tags", "--scope", "mc20_13TeV"])
-    assert output == "tag1\ntag2\ntag3\n"
+    assert output == ["tag1", "tag2", "tag3"]
 
 
 def test_run_centralpage_for_real():

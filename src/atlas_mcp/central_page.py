@@ -206,10 +206,6 @@ def get_hash_tags(cpa: CentralPageAddress) -> List[str]:
     cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags, "--list_hashtags"]
     output = run_centralpage(cmd_args)
 
-    # If run_centralpage returns a single string, split into lines; if it
-    # already returned a list, keep it.
-    if isinstance(output, str):
-        return [line for line in output.splitlines() if line]
     return output
 
 
@@ -285,8 +281,6 @@ def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
     """
     cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags]
     output = run_centralpage(cmd_args)
-    if isinstance(output, str):
-        return [line for line in output.splitlines() if line]
     return output
 
 

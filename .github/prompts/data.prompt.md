@@ -22,13 +22,22 @@ Use the following steps to determine the dataset that will be used to run the us
 
 4. Once you have an address, use the tool `atlas_mcp/get_samples_for_address` tool to find a particular dataset.
 
-5. Select the best matching dataset for the user question, or more than one if it isn't clear which one to use.
+5. Select the best matching EVNT dataset for the user question, or more than one if it isn't clear which one to use.
 
-Let the user know the scope and tags, along with the dataset you choose.
-Use the following format:
+6. Finally, use the `atlas_mcp/get_samples_for_evtgen` tool to find the actual dataset that matches the user's question. If you have a choice, select the one with the most recent period (highest mc letter), and pick the PHYSLITE dataset tier if the user hasn't requested anything specific.
+
+Please reply to the user in the following format:
 
 ```text
 Scope: <scope>
 Tags: <tag1>, <tag2>, ...
-Dataset: <dataset1>, <dataset2>, ...
+Dataset:
+  - name: <DID1>
+    type: <type1>
+    period: <period1>
+    x_section: <x_section1>
+    k_factor: <k_factor1>
+    gen_filter_eff: <gen_filter_eff1>
+  - name: <DID2>
+    ...
 ```

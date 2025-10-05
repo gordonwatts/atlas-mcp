@@ -28,6 +28,16 @@ class CentralPageScope(BaseModel):
 
 class DIDInfo(BaseModel):
     did: str = Field(description="Rucio Dataset Identifier")
+    x_sec: float = Field(description="Cross section in pb")
+    generator_filter_eff: float = Field(description="Generator filter efficiency")
+    k_factor: float = Field(description="K-factor")
+    d_type: str = Field(
+        description="What data/teir type is this file - AOD, DAOD_PHYS, etc"
+    )
+    s_type: str = Field(
+        description="Simulation type - Full Simulation (FS), Fast Simulation (AF3), etc"
+    )
+    period: str = Field(description="MC period - mc20, mc21, mc23a, etc.")
 
 
 # TODO: Figure out how not to hard-wire this!
@@ -287,7 +297,7 @@ def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
 
 def get_samples_for_evtgen(
     scope: str, evtgen_sample: str, derivation: str
-) -> List[str]:
+) -> List[DIDInfo]:
     """Returns a list of rucio dataset names for a given EVTGEN sample.
 
     Args:
@@ -304,6 +314,10 @@ def get_samples_for_evtgen(
         derivation_flag = "--physlite"
     elif derivation.startswith("DAOD_"):
         derivation_flag = f"--out={derivation.upper()}"
+    else:
+        raise RuntimeError(
+            "Invalid `derivation` - must be `AOD`, `PHYS`, `PHYSLITE`, `DAOD_xxx`"
+        )
     lines = run_in_centralpage_env(
         f"echo --start-- && python3 /tmp/data_finder.py --scope {scope} {evtgen_sample} "
         f"-m {derivation_flag}",
@@ -325,5 +339,31 @@ def get_samples_for_evtgen(
             results.append(ln)
         if "--start--" in ln:
             seen_start = True
+
+    # The first line contains all the filter constants and cross section.
+    if len(results) <= 1:
+        return []
+
+    _, s_x_sec, s_generator_filter_eff, s_k_factor = results.pop(0).split(" ")
+    x_sec, generator_filter_eff, k_factor = (
+        float(s_x_sec),
+        float(s_generator_filter_eff),
+        float(s_k_factor),
+    )
+
+    # Now loop over every found dataset.
+    results = [
+        DIDInfo(
+            did=ln.split()[3],
+            x_sec=x_sec,
+            generator_filter_eff=generator_filter_eff,
+            k_factor=k_factor,
+            d_type=ln.split()[2],
+            s_type=ln.split()[1],
+            period=ln.split()[0],
+        )
+        for ln in results
+        if ln.strip()
+    ]
 
     return results

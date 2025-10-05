@@ -92,3 +92,50 @@ def test_run_on_wsl_file_not_found():
         assert False, "Expected FileNotFoundError"
     except FileNotFoundError as e:
         assert str(non_existent_path) in str(e)
+
+
+def test_get_samples_for_evtgen_parses_lines(mocker):
+    """Ensure get_samples_for_evtgen parses lines after the start marker."""
+    # Mock the environment runner to simulate the echoed start marker and two lines
+    mocked_stdout = (
+        "--start--\nmc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.evgen"
+        ".EVNT.e8514 811.29 4.384567E-01 1.138433852\n   mc23a   FS DAOD_LLP1  "
+        "mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1."
+        "e8514_s4162_r15540_p6942\n   mc23a   FS DAOD_LLP1  mc23_13p6TeV.601229."
+        "PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1."
+        "e8514_s4162_r15540_p6619\n   mc23a   FS DAOD_LLP1  mc23_13p6TeV.601229."
+        "PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1."
+        "e8514_s4162_r15540_p6463\n   mc23a   FS DAOD_LLP1  mc23_s4159_r15530_p6619\n   mc23d   "
+        "FS DAOD_LLP1  mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1"
+        ".e8514_s4159_r15530_p6463\n   mc23d   FS DAOD_LLP1  mc23_13p6TeV.601229."
+        "PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1.e8514_s4159_r15530_p6368\n   "
+        "mc23e   FS DAOD_LLP1  mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv."
+        "DAOD_LLP1.e8514_s4369_r16083_p6942\n   mc23e   FS DAOD_LLP1  mc23_13p6TeV.601229."
+        "PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1.e8514_s4369_r16083_p6619']"
+    )
+
+    mocker.patch(
+        "atlas_mcp.central_page.run_in_centralpage_env", return_value=mocked_stdout
+    )
+    result = central_page_mod.get_samples_for_evtgen(
+        "mc23_13p6TeV",
+        "mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.evgen.EVNT.e8514",
+        "DAOD_LLP1",
+    )
+
+    assert len(result) == 8
+    d1 = result[0]
+    assert d1.x_sec == 811.29
+    assert d1.generator_filter_eff == 0.4384567
+    assert d1.k_factor == 1.138433852
+    assert (
+        d1.did
+        == "mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1."
+        "e8514_s4162_r15540_p6942"
+    )
+    assert d1.d_type == "DAOD_LLP1"
+    assert d1.s_type == "FS"
+    assert d1.period == "mc23a"
+
+    # Make sure all names are unique
+    assert len(set(r.did for r in result)) == len(result)

@@ -6,8 +6,10 @@
         "dsid",
         "evtgen",
         "fastmcp",
+        "hdamp",
         "lsetup",
         "PHYSLITE",
-        "rucio"
+        "rucio",
+        "ttbar"
     ]
 }

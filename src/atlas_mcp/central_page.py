@@ -1,3 +1,4 @@
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -295,6 +296,7 @@ def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
     return output
 
 
+@cache.memoize()
 def get_samples_for_evtgen(
     scope: str, evtgen_sample: str, derivation: str
 ) -> List[DIDInfo]:
@@ -352,18 +354,24 @@ def get_samples_for_evtgen(
     )
 
     # Now loop over every found dataset.
-    results = [
-        DIDInfo(
-            did=ln.split()[3],
-            x_sec=x_sec,
-            generator_filter_eff=generator_filter_eff,
-            k_factor=k_factor,
-            d_type=ln.split()[2],
-            s_type=ln.split()[1],
-            period=ln.split()[0],
-        )
-        for ln in results
-        if ln.strip()
-    ]
+    try:
+        results = [
+            DIDInfo(
+                did=ln.split()[3],
+                x_sec=x_sec,
+                generator_filter_eff=generator_filter_eff,
+                k_factor=k_factor,
+                d_type=ln.split()[2],
+                s_type=ln.split()[1],
+                period=ln.split()[0],
+            )
+            for ln in results
+            if ln.strip() and len(ln.split()) == 4
+        ]
 
-    return results
+        return results
+
+    except Exception:
+        # Could be connection problem...
+        logging.error(f"Failed to parse response from `centralpage`: \n{results}")
+        raise

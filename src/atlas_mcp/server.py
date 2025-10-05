@@ -40,7 +40,7 @@ def get_evtgen_for_address(cpa: cp.CentralPageAddress) -> List[str]:
 def get_samples_for_evtgen(
     scope: str, evtgen_sample: str, data_tier: str
 ) -> List[cp.DIDInfo]:
-    """Returns a list of rucio dataset names of a particlar data_tier for a given EVTGEN sample
+    """Returns a list of rucio dataset names of a particular data_tier for a given EVTGEN sample
     and scope.
 
     evtgen_sample should be a valid rucio ID, with EVNT as the data tier.
@@ -58,7 +58,6 @@ myprompts.register(mcp)
 
 def main() -> None:
     # stdio is the default; this runs the server loop
-    print("hi")
     mcp.run()
 
 

@@ -33,7 +33,7 @@ class DIDInfo(BaseModel):
     generator_filter_eff: float = Field(description="Generator filter efficiency")
     k_factor: float = Field(description="K-factor")
     d_type: str = Field(
-        description="What data/teir type is this file - AOD, DAOD_PHYS, etc"
+        description="What data/tier type is this file - AOD, DAOD_PHYS, etc"
     )
     s_type: str = Field(
         description="Simulation type - Full Simulation (FS), Fast Simulation (AF3), etc"
@@ -73,30 +73,23 @@ def get_allowed_scopes() -> List[CentralPageScope]:
     return allowed_scopes
 
 
-def run_centralpage(args: List[str]) -> str | List[str]:
-    """Runs the centralpage command with the given arguments and returns the output.
+def run_centralpage(args: List[str]) -> List[str]:
+    """Runs the centralpage command with the given arguments and returns the output as a list of lines.
 
     This wraps `run_on_wsl` which runs arbitrary commands on a configured WSL
-    distribution. Keeping the high-level behavior the same: we set up the
-    ATLAS environment, lsetup centralpage, echo a start marker, then run
-    `centralpage` with the provided args and return the output lines after
-    the marker.
+    distribution. We set up the ATLAS environment, lsetup centralpage, echo a start marker,
+    then run `centralpage` with the provided args and return the output lines after the marker.
 
     Args:
         args (List[str]): List of arguments to pass to the centralpage command
 
     Returns:
-        str | List[str]: If the start marker is present, returns the list of lines
-        after the marker. If not present (e.g., in certain mocked or direct
-        subprocess scenarios), returns the raw stdout string.
+        List[str]: List of output lines after the start marker, or all output lines if the marker is not found.
     """
     # Build the command snippet to run inside WSL (after env setup)
     inner_cmd = "echo --start-- && centralpage " + " ".join(args)
 
-    # Run inside the centralpage-configured environment. If the
-    # start marker is present in the output, return the list of lines after
-    # the marker (this is the original behavior). If not present, return the
-    # raw stdout string (this helps unit tests that mock subprocess.run).
+    # Run inside the centralpage-configured environment.
     stdout = run_in_centralpage_env(inner_cmd)
 
     lines = stdout.splitlines()
@@ -104,7 +97,8 @@ def run_centralpage(args: List[str]) -> str | List[str]:
         start_index = lines.index("--start--") + 1
         return lines[start_index:]
     except ValueError:
-        return stdout
+        # If the marker is not found, return all lines as a list
+        return lines
 
 
 def run_in_centralpage_env(

@@ -8,5 +8,5 @@
 
 ## Tests
 
-* Run tests with `pytest`.
+* Run tests with `pytest`. Make sure to setup the virtual environment first!
 * When authoring new test, put them in a file `tests/test_xxx.py` where `xxx` is the name of the file of the function you are testing.

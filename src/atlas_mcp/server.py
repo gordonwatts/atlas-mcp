@@ -1,3 +1,4 @@
+import json
 from typing import List
 
 from mcp.server.fastmcp import FastMCP
@@ -16,13 +17,26 @@ def get_allowed_scopes() -> List[cp.CentralPageScope]:
 
 
 @mcp.tool()
-def get_addresses_for_keyword(scope: str, keyword: str) -> List[cp.CentralPageAddress]:
-    """Returns a list of CentralPageAddress for the given scope. This is a good set of keywords
-    for a category search for standard ATLAS background datasets. Only addresses that contain the
-    keyword are returned.
+def get_addresses_for_keyword(
+    scope: str, keyword: str, baseline_only: bool = True
+) -> str:
+    """Searches the PMG group's Standard Model Monte Carlo datasets for a hashtag that
+    contains `keyword`. Only hashtags in `scope` are considered. Full 4-tuples hashtags
+    are returned.
+
+    These tuples can be passed to other methods to return datasets associated with them.
+    The hashtags specify categories of datasets. They often have easily understandable english
+    names and so make for a great place to start a Standard Model dataset search.
+
+    The third returned tag indicates whether the dataset is 'Baseline', 'Systematic',
+    or 'Alternative'. By default only hashtag combinations with `Baseline` are returned.
+    If one needs samples that are alternative for for systematic comparisons, change the
+    `baseline_only` parameter.
     """
     addresses = cp.get_address_for_keyword(scope, keyword)
-    return addresses
+    if baseline_only:
+        addresses = [addr for addr in addresses if addr.hash_tags[2] == "Baseline"]
+    return json.dumps([addr.model_dump() for addr in addresses])
 
 
 @mcp.tool()

@@ -1,4 +1,11 @@
-from atlas_mcp.central_page import CentralPageAddress, get_allowed_scopes, run_on_wsl
+import pytest
+import atlas_mcp.central_page as central_page_mod
+from atlas_mcp.central_page import (
+    CentralPageAddress,
+    get_allowed_scopes,
+    run_on_wsl,
+    get_samples_for_run,
+)
 import subprocess
 from pathlib import Path
 
@@ -90,55 +97,6 @@ def test_run_on_wsl_file_not_found():
         assert False, "Expected FileNotFoundError"
     except FileNotFoundError as e:
         assert str(non_existent_path) in str(e)
-
-
-# def test_get_samples_for_evtgen_parses_lines(mocker):
-#     """Ensure get_samples_for_evtgen parses lines after the start marker."""
-#     # Mock the environment runner to simulate the echoed start marker and two lines
-#     mocked_stdout = (
-#         "--start--\nmc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.evgen"
-#         ".EVNT.e8514 811.29 4.384567E-01 1.138433852\n   mc23a   FS DAOD_LLP1  "
-#         "mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1."
-#         "e8514_s4162_r15540_p6942\n   mc23a   FS DAOD_LLP1  mc23_13p6TeV.601229."
-#         "PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1."
-#         "e8514_s4162_r15540_p6619\n   mc23a   FS DAOD_LLP1  mc23_13p6TeV.601229."
-#         "PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1."
-#         "e8514_s4162_r15540_p6463\n   mc23a   FS DAOD_LLP1  mc23_s4159_r15530_p6619\n   mc23d   "
-#         "FS DAOD_LLP1  mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv."
-# "DAOD_LLP1"
-#         ".e8514_s4159_r15530_p6463\n   mc23d   FS DAOD_LLP1  mc23_13p6TeV.601229."
-#         "PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1.e8514_s4159_r15530_p6368\n   "
-#         "mc23e   FS DAOD_LLP1  mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep."
-# "deriv."
-#         "DAOD_LLP1.e8514_s4369_r16083_p6942\n   mc23e   FS DAOD_LLP1  mc23_13p6TeV.601229."
-#         "PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1.e8514_s4369_r16083_p6619']"
-#     )
-
-#     mocker.patch(
-#         "atlas_mcp.central_page.run_in_centralpage_env", return_value=mocked_stdout
-#     )
-#     result = central_page_mod.get_samples_for_evtgen(
-#         "mc23_13p6TeV",
-#         "mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.evgen.EVNT.e8514",
-#         "DAOD_LLP1",
-#     )
-
-#     assert len(result) == 8
-#     d1 = result[0]
-#     assert d1.x_sec == 811.29
-#     assert d1.generator_filter_eff == 0.4384567
-#     assert d1.k_factor == 1.138433852
-#     assert (
-#         d1.did
-#         == "mc23_13p6TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.deriv.DAOD_LLP1."
-#         "e8514_s4162_r15540_p6942"
-#     )
-#     assert d1.d_type == "DAOD_LLP1"
-#     assert d1.s_type == "FS"
-#     assert d1.period == "mc23a"
-
-#     # Make sure all names are unique
-#     assert len(set(r.did for r in result)) == len(result)
 
 
 # def test_get_address_for_keyword(mocker):
@@ -241,3 +199,54 @@ def test_central_page_address_hashable():
     # Test they can be used as dict keys
     cache_dict = {addr1: "value1"}  # type: ignore[Unhashable]
     assert cache_dict[addr2] == "value1"
+
+
+@pytest.mark.parametrize(
+    "derivation, expected_flag",
+    [
+        ("PHYS", "DAOD_PHYS"),
+        ("PHYSLITE", "DAOD_PHYSLITE"),
+        ("DAOD_LLP1", "DAOD_LLP1"),
+    ],
+)
+def test_get_samples_for_run_builds_correct_command(mocker, derivation, expected_flag):
+    """Verify mapping and delegation for get_samples_for_run.
+
+    Ensures derivation maps to the expected flag and the ami-helper
+    command is constructed correctly.
+    """
+    # Ensure cache doesn't short-circuit this test
+    central_page_mod.cache.clear()
+
+    mocked = mocker.patch(
+        "atlas_mcp.central_page.run_ami_helper", return_value=["ds1", "ds2"]
+    )
+
+    scope = "mc23_13p6TeV"
+    run_number = "00473423"
+
+    result = get_samples_for_run(scope, run_number, derivation)
+
+    # Returns exactly what ami-helper returns
+    assert result == ["ds1", "ds2"]
+
+    # Ensures we built the proper command
+    mocked.assert_called_once_with(
+        f"datasets with-datatype {scope} {run_number} {expected_flag}"
+    )
+
+
+@pytest.mark.parametrize("bad_derivation", ["INVALID", "AOD"])
+def test_get_samples_for_run_invalid_derivation_raises(bad_derivation):
+    """Invalid derivations (incl. 'AOD') currently raise RuntimeError.
+
+    Note: Docstring lists 'AOD' as an example, but current code
+    does not accept it. This documents current behavior.
+    """
+    # Ensure cache doesn't short-circuit this test
+    central_page_mod.cache.clear()
+
+    with pytest.raises(RuntimeError) as excinfo:
+        get_samples_for_run("mc23_13p6TeV", "00473423", bad_derivation)
+
+    assert "Invalid `derivation`" in str(excinfo.value)

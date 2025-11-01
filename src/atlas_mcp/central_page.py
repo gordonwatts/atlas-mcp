@@ -254,82 +254,29 @@ def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
     return output
 
 
-# @cache.memoize()
-# def get_samples_for_evtgen(
-#     scope: str, evtgen_sample: str, derivation: str
-# ) -> List[DIDInfo]:
-#     """Returns a list of rucio dataset names for a given EVTGEN sample.
+@cache.memoize()
+def get_samples_for_run(scope: str, run_number: str, derivation: str) -> List[str]:
+    """Returns a list of rucio dataset names for a given EVTGEN sample.
 
-#     Args:
-#         scope (str): Scope name
-#         evtgen_sample (str): EVTGEN sample name
-#         derivation (str): Derivation type, e.g. 'PHYS', 'AOD', 'PHYSLITE', 'DAOD_LLP1', etc.
-#     """
-#     derivation_flag = ""
-#     if derivation == "PHYS":
-#         derivation_flag = "--phys"
-#     elif derivation == "AOD":
-#         derivation_flag = "--aod"
-#     elif derivation == "PHYSLITE":
-#         derivation_flag = "--physlite"
-#     elif derivation.startswith("DAOD_"):
-#         derivation_flag = f"--out={derivation.upper()}"
-#     else:
-#         raise RuntimeError(
-#             "Invalid `derivation` - must be `AOD`, `PHYS`, `PHYSLITE`, `DAOD_xxx`"
-#         )
-#     lines = run_in_centralpage_env(
-#         f"echo --start-- && python3 /tmp/data_finder.py --scope {scope} {evtgen_sample} "
-#         f"-m {derivation_flag}",
-#         files={
-#             "data_finder.py": Path(__file__).parent.parent.parent
-#             / "scripts"
-#             / "dsid_finder"
-#             / "data_finder.py",
-#             "utils.py": Path(__file__).parent.parent.parent
-#             / "scripts"
-#             / "dsid_finder"
-#             / "utils.py",
-#         },
-#     )
-#     results = []
-#     seen_start = False
-#     for ln in lines.splitlines():
-#         if seen_start:
-#             results.append(ln)
-#         if "--start--" in ln:
-#             seen_start = True
+    Args:
+        scope (str): Scope name
+        evtgen_sample (str): EVTGEN sample name
+        derivation (str): Derivation type, e.g. 'PHYS', 'AOD', 'PHYSLITE', 'DAOD_LLP1', etc.
+    """
+    derivation_flag = ""
+    if derivation.upper() == "PHYS":
+        derivation_flag = "DAOD_PHYS"
+    elif derivation.upper() == "PHYSLITE":
+        derivation_flag = "DAOD_PHYSLITE"
+    elif derivation.upper().startswith("DAOD_"):
+        derivation_flag = derivation.upper()
+    else:
+        raise RuntimeError(
+            "Invalid `derivation` - must be `AOD`, `PHYS`, `PHYSLITE`, `DAOD_xxx`"
+        )
 
-#     # The first line contains all the filter constants and cross section.
-#     if len(results) <= 1:
-#         return []
+    lines = run_ami_helper(
+        f"datasets with-datatype {scope} {run_number} {derivation_flag}"
+    )
 
-#     _, s_x_sec, s_generator_filter_eff, s_k_factor = results.pop(0).split(" ")
-#     x_sec, generator_filter_eff, k_factor = (
-#         float(s_x_sec),
-#         float(s_generator_filter_eff),
-#         float(s_k_factor),
-#     )
-
-#     # Now loop over every found dataset.
-#     try:
-#         results = [
-#             DIDInfo(
-#                 did=ln.split()[3],
-#                 x_sec=x_sec,
-#                 generator_filter_eff=generator_filter_eff,
-#                 k_factor=k_factor,
-#                 d_type=ln.split()[2],
-#                 s_type=ln.split()[1],
-#                 period=ln.split()[0],
-#             )
-#             for ln in results
-#             if ln.strip() and len(ln.split()) == 4
-#         ]
-
-#         return results
-
-#     except Exception:
-#         # Could be connection problem...
-#         logging.error(f"Failed to parse response from `centralpage`: \n{results}")
-#         raise
+    return lines

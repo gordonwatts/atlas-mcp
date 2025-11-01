@@ -64,9 +64,7 @@ def get_evtgen_for_address(scope: str, hashtags: List[str]) -> str:
 
 
 @mcp.tool()
-def get_samples_for_evtgen(
-    scope: str, evtgen_sample: str, data_tier: str
-) -> List[cp.DIDInfo]:
+def get_samples_for_run(scope: str, run_number: str, data_tier: str) -> str:
     """Returns a list of rucio dataset names of a particular data_tier for a given EVTGEN sample
     and scope.
 
@@ -74,9 +72,11 @@ def get_samples_for_evtgen(
 
     data_tier should be "PHYSLITE", "PHYS", "DAOD_LLP1", etc. Default to PHYSLITE unless
     otherwise requested.
+
+    Returns json
     """
-    results = cp.get_samples_for_evtgen(scope, evtgen_sample, data_tier)
-    return results
+    results = cp.get_samples_for_run(scope, run_number, data_tier)
+    return json.dumps(results)
 
 
 # Optional: register prompts so they appear as /mcp.myServer.greet

@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import List
 
 from mcp.server.fastmcp import FastMCP
@@ -45,7 +46,7 @@ def get_addresses_for_keyword(
 
 
 @mcp.tool()
-def get_evtgen_for_address(cpa: cp.CentralPageAddress) -> str:
+def get_evtgen_for_address(scope: str, hashtags: List[str]) -> str:
     """Returns a list of event generator (evtgen) sample names for a given CentralPageAddress.
     These will be rucio dataset names, for datasets that contains the output of
     the MC generation step. All samples for this address are returned. Parse the sample
@@ -53,7 +54,12 @@ def get_evtgen_for_address(cpa: cp.CentralPageAddress) -> str:
 
     Returns json
     """
+    if len(hashtags) != 4:
+        raise ValueError("hashtags must be a list of 4 strings")
+
+    cpa = cp.CentralPageAddress(scope=scope, hash_tags=tuple(hashtags))
     samples = cp.get_evtgen_for_address(cpa)
+    logging.warning(samples)
     return json.dumps(samples)
 
 

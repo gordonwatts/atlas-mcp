@@ -125,6 +125,7 @@ def run_ami_helper(
     """
     # Build the command snippet to run inside WSL (after env setup)
     inner_cmd = "echo --start-- && uvx --python=3.11 ami-helper " + args
+    logging.warning(inner_cmd)
 
     # Run inside the centralpage-configured environment.
     stdout = run_on_wsl(inner_cmd, files=files)
@@ -241,16 +242,16 @@ def get_address_for_keyword(
     return matches
 
 
-# @cache.memoize()
-# def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
-#     """Returns a list of EVTGEN sample names for a given CentralPageAddress.
+@cache.memoize()
+def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
+    """Returns a list of EVTGEN sample names for a given CentralPageAddress.
 
-#     Args:
-#         cpa (CentralPageAddress): CentralPageAddress object
-#     """
-#     cmd_args = [f"--scope={cpa.scope}", *cpa.hash_tags]
-#     output = run_centralpage(cmd_args)
-#     return output
+    Args:
+        cpa (CentralPageAddress): CentralPageAddress object
+    """
+    cmd_args = [*["datasets", "with-hashtags"], f"{cpa.scope}", *cpa.hash_tags]
+    output = run_ami_helper(" ".join(cmd_args))
+    return output
 
 
 # @cache.memoize()

@@ -1,6 +1,35 @@
 import json
-from atlas_mcp.central_page import CentralPageAddress
+from atlas_mcp.central_page import CentralPageAddress, CentralPageScope
 from atlas_mcp import server
+
+
+def test_get_allowed_scopes(mocker):
+    """Test get_allowed_scopes returns a valid JSON list of scopes."""
+    # Create mock data
+    mock_scopes = [
+        CentralPageScope(scope="mc23_13p6TeV", description="Run 3 MC"),
+        CentralPageScope(scope="mc21_13TeV", description="Run 2 MC"),
+        CentralPageScope(scope="mc20_13TeV", description="Run 2 MC (older)"),
+    ]
+
+    # Mock the central_page.get_allowed_scopes function
+    mocker.patch("atlas_mcp.central_page.get_allowed_scopes", return_value=mock_scopes)
+
+    # Call the server function
+    result = server.get_allowed_scopes()
+
+    # Verify the result is valid JSON
+    parsed = json.loads(result)
+
+    # Verify it's a list
+    assert isinstance(parsed, list)
+
+    # Verify the correct number of scopes
+    assert len(parsed) == 3
+
+    # Verify the content - should be just the scope strings
+    assert parsed[0]["scope"] == "mc23_13p6TeV"
+    assert parsed[0]["description"] == "Run 3 MC"
 
 
 def test_get_addresses_for_keyword_baseline_only(mocker):

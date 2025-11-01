@@ -10,10 +10,13 @@ mcp = FastMCP("atlas_standard_MonteCarlo_catalog")
 
 
 @mcp.tool()
-def get_allowed_scopes() -> List[cp.CentralPageScope]:
+def get_allowed_scopes() -> str:
     """Returns a list of allowed scopes/data-taking-periods
-    for the CentralPage MC Sample catalog."""
-    return cp.get_allowed_scopes()
+    for the CentralPage MC Sample catalog.
+
+    Returns json.
+    """
+    return json.dumps([s.model_dump() for s in cp.get_allowed_scopes()])
 
 
 @mcp.tool()
@@ -32,6 +35,8 @@ def get_addresses_for_keyword(
     or 'Alternative'. By default only hashtag combinations with `Baseline` are returned.
     If one needs samples that are alternative for for systematic comparisons, change the
     `baseline_only` parameter.
+
+    Returns json
     """
     addresses = cp.get_address_for_keyword(scope, keyword)
     if baseline_only:
@@ -40,14 +45,16 @@ def get_addresses_for_keyword(
 
 
 @mcp.tool()
-def get_evtgen_for_address(cpa: cp.CentralPageAddress) -> List[str]:
+def get_evtgen_for_address(cpa: cp.CentralPageAddress) -> str:
     """Returns a list of event generator (evtgen) sample names for a given CentralPageAddress.
     These will be rucio dataset names, for datasets that contains the output of
     the MC generation step. All samples for this address are returned. Parse the sample
-    names to find the ones required.
+    names to find the ones required. Sample names often contain decay channels, etc.
+
+    Returns json
     """
     samples = cp.get_evtgen_for_address(cpa)
-    return samples
+    return json.dumps(samples)
 
 
 @mcp.tool()

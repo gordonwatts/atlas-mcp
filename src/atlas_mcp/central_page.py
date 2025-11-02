@@ -284,12 +284,22 @@ def get_samples_for_run(scope: str, run_number: str, derivation: str) -> Dict[st
 
 
 @cache.memoize()
-def get_metadata(scope: str, full_dataset_name: str) -> Dict[str, Any]:
+def get_metadata(
+    scope: str,
+    full_dataset_name: str,
+    use_top_of_provenance: bool = False,
+) -> Dict[str, Any]:
     """Returns metadata for a given dataset.
+
+    Optionally resolves the dataset to the top of the provenance chain
+    (i.e., the original EVNT) before fetching metadata.
 
     Args:
         scope (str): Scope name (e.g., 'mc20_13TeV', 'mc23_13p6TeV')
         full_dataset_name (str): Full dataset name
+        use_top_of_provenance (bool): If True, first call ``get_provenance``
+            and use the last dataset in that list as the target for metadata
+            lookup. Defaults to False.
 
     Returns:
         Dict[str, Any]: Dictionary containing metadata fields such as:
@@ -299,9 +309,33 @@ def get_metadata(scope: str, full_dataset_name: str) -> Dict[str, Any]:
             - Filter Efficiency
             - Cross Section (nb)
     """
-    lines = run_ami_helper(f"datasets {scope} {full_dataset_name} --json")
+    target_ds = full_dataset_name
+    if use_top_of_provenance:
+        prov = get_provenance(scope, full_dataset_name)
+        if prov:
+            target_ds = prov[-1]
+
+    lines = run_ami_helper(f"datasets metadata {scope} {target_ds} --json")
 
     # Join all lines and parse as JSON
     d = json.loads(" ".join(lines))
 
     return d
+
+
+@cache.memoize()
+def get_provenance(scope: str, dataset_name: str) -> List[str]:
+    """Returns the provenance chain for a given dataset.
+
+    Returns all the datasets from the current one back to the original EVNT file.
+
+    Args:
+        scope (str): Scope name (e.g., 'mc20_13TeV', 'mc23_13p6TeV')
+        dataset_name (str): Dataset name
+
+    Returns:
+        List[str]: List of dataset names in the provenance chain, one per line
+    """
+    lines = run_ami_helper(f"datasets provenance {scope} {dataset_name}")
+
+    return lines

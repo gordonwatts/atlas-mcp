@@ -6,6 +6,7 @@ from atlas_mcp.central_page import (
     run_on_wsl,
     get_samples_for_run,
     get_metadata,
+    get_provenance,
 )
 import subprocess
 from pathlib import Path
@@ -287,7 +288,7 @@ def test_get_metadata_builds_correct_command(mocker):
     result = get_metadata(scope, dataset_name)
 
     # Verify the command was constructed correctly
-    mocked.assert_called_once_with(f"datasets {scope} {dataset_name} --json")
+    mocked.assert_called_once_with(f"datasets metadata {scope} {dataset_name} --json")
 
     # Verify the returned dictionary contains the expected fields
     assert isinstance(result, dict)
@@ -296,3 +297,76 @@ def test_get_metadata_builds_correct_command(mocker):
     assert result["Generator Name"] == "Pythia8(v.308)+EvtGen(v.2.1.1)"
     assert result["Filter Efficiency"] == 0.01530918
     assert result["Cross Section (nb)"] == 0.000027822
+
+
+def test_get_metadata_uses_top_of_provenance(mocker):
+    """Verify get_metadata uses the top dataset from provenance when requested."""
+    # Ensure cache doesn't short-circuit this test
+    central_page_mod.cache.clear()
+
+    # Mock provenance chain (DAOD -> AOD -> HITS -> EVNT)
+    provenance_chain = [
+        "mc23_13p6TeV.123456...DAOD_PHYS.e8514_s4162_r14622_p5855",
+        "mc23_13p6TeV.123456...AOD.e8514_s4162_r14622",
+        "mc23_13p6TeV.123456...HITS.e8514_s4162",
+        "mc23_13p6TeV.123456...EVNT.e8514",
+    ]
+
+    mocker.patch("atlas_mcp.central_page.get_provenance", return_value=provenance_chain)
+
+    # Return minimal JSON for metadata
+    mocker.patch(
+        "atlas_mcp.central_page.run_ami_helper",
+        return_value=['{"Physics Short Name": "EVNT_TOP"}'],
+    )
+
+    scope = "mc23_13p6TeV"
+    dataset_name = (
+        "mc23_13p6TeV.123456.Pythia8_A14NNPDF23LO_jj_JZ9."
+        "deriv.DAOD_PHYS.e8514_s4162_r14622_p5855"
+    )
+
+    result = get_metadata(scope, dataset_name, use_top_of_provenance=True)
+
+    # Should parse JSON and return dict
+    assert isinstance(result, dict)
+    assert result["Physics Short Name"] == "EVNT_TOP"
+
+
+def test_get_provenance_builds_correct_command(mocker):
+    """Verify get_provenance constructs the ami-helper command correctly
+    and returns a list of dataset names.
+    """
+    # Ensure cache doesn't short-circuit this test
+    central_page_mod.cache.clear()
+
+    # Mock the ami-helper output as simple lines
+    mock_output = [
+        "mc23_13p6TeV.123456.Pythia8_A14NNPDF23LO_jj_JZ9.deriv.DAOD_PHYS.e8514_s4162_r14622_p5855",
+        "mc23_13p6TeV.123456.Pythia8_A14NNPDF23LO_jj_JZ9.recon.AOD.e8514_s4162_r14622",
+        "mc23_13p6TeV.123456.Pythia8_A14NNPDF23LO_jj_JZ9.simul.HITS.e8514_s4162",
+        "mc23_13p6TeV.123456.Pythia8_A14NNPDF23LO_jj_JZ9.evgen.EVNT.e8514",
+    ]
+
+    mocked = mocker.patch(
+        "atlas_mcp.central_page.run_ami_helper", return_value=mock_output
+    )
+
+    scope = "mc23_13p6TeV"
+    dataset_name = (
+        "mc23_13p6TeV.123456.Pythia8_A14NNPDF23LO_jj_JZ9."
+        "deriv.DAOD_PHYS.e8514_s4162_r14622_p5855"
+    )
+
+    result = get_provenance(scope, dataset_name)
+
+    # Verify the command was constructed correctly
+    mocked.assert_called_once_with(f"datasets provenance {scope} {dataset_name}")
+
+    # Verify the returned list contains the expected datasets
+    assert isinstance(result, list)
+    assert len(result) == 4
+    assert result[0].endswith("DAOD_PHYS.e8514_s4162_r14622_p5855")
+    assert result[1].endswith("AOD.e8514_s4162_r14622")
+    assert result[2].endswith("HITS.e8514_s4162")
+    assert result[3].endswith("EVNT.e8514")

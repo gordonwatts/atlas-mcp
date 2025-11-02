@@ -1,5 +1,4 @@
 import json
-import logging
 from typing import List
 
 from mcp.server.fastmcp import FastMCP
@@ -59,7 +58,6 @@ def get_evtgen_for_address(scope: str, hashtags: List[str]) -> str:
 
     cpa = cp.CentralPageAddress(scope=scope, hash_tags=tuple(hashtags))
     samples = cp.get_evtgen_for_address(cpa)
-    logging.warning(samples)
     return json.dumps(samples)
 
 
@@ -72,6 +70,9 @@ def get_samples_for_run(scope: str, run_number: str, data_tier: str) -> str:
 
     data_tier should be "PHYSLITE", "PHYS", "DAOD_LLP1", etc. Default to PHYSLITE unless
     otherwise requested.
+
+    Returns the datasets and the ATLAS MC Campaigns. Those without a MC campaign should
+    probably be ignored.
 
     Returns json
     """

@@ -1,8 +1,8 @@
-import logging
 import os
 from pathlib import Path
-from typing import List, Union, Dict, Tuple
+from typing import Any, List, Union, Dict, Tuple
 import base64
+import json
 
 from diskcache import Cache
 from pydantic import BaseModel, Field
@@ -125,7 +125,6 @@ def run_ami_helper(
     """
     # Build the command snippet to run inside WSL (after env setup)
     inner_cmd = "echo --start-- && uvx --python=3.11 ami-helper " + args
-    logging.warning(inner_cmd)
 
     # Run inside the centralpage-configured environment.
     stdout = run_on_wsl(inner_cmd, files=files)
@@ -255,7 +254,7 @@ def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
 
 
 @cache.memoize()
-def get_samples_for_run(scope: str, run_number: str, derivation: str) -> List[str]:
+def get_samples_for_run(scope: str, run_number: str, derivation: str) -> Dict[str, Any]:
     """Returns a list of rucio dataset names for a given EVTGEN sample.
 
     Args:
@@ -276,7 +275,9 @@ def get_samples_for_run(scope: str, run_number: str, derivation: str) -> List[st
         )
 
     lines = run_ami_helper(
-        f"datasets with-datatype {scope} {run_number} {derivation_flag}"
+        f"datasets with-datatype {scope} {run_number} {derivation_flag} -o json"
     )
 
-    return lines
+    d = json.loads(" ".join(lines))
+
+    return d

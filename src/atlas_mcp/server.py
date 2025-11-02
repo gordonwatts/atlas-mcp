@@ -80,6 +80,25 @@ def get_samples_for_run(scope: str, run_number: str, data_tier: str) -> str:
     return json.dumps(results)
 
 
+@mcp.tool()
+def get_metadata(
+    scope: str, dataset_name: str, use_top_of_provenance: bool = False
+) -> str:
+    """Returns metadata for a given dataset as JSON. This includes cross section,
+    generator filter efficiency, physics short name, etc.
+
+    If ``use_top_of_provenance`` is True, the server will first resolve the
+    provenance chain and fetch metadata for the top (last) dataset, typically
+    the EVNT.
+
+    Returns json
+    """
+    md = cp.get_metadata(
+        scope, dataset_name, use_top_of_provenance=use_top_of_provenance
+    )
+    return json.dumps(md)
+
+
 # Optional: register prompts so they appear as /mcp.myServer.greet
 myprompts.register(mcp)
 

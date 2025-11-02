@@ -75,36 +75,6 @@ def get_allowed_scopes() -> List[CentralPageScope]:
     return allowed_scopes
 
 
-# def run_centralpage_old(args: List[str]) -> List[str]:
-#     """Runs the centralpage command with the given arguments and returns the output as a list of
-#     lines.
-
-#     This wraps `run_on_wsl` which runs arbitrary commands on a configured WSL
-#     distribution. We set up the ATLAS environment, lsetup centralpage, echo a start marker,
-#     then run `centralpage` with the provided args and return the output lines after the marker.
-
-#     Args:
-#         args (List[str]): List of arguments to pass to the centralpage command
-
-#     Returns:
-#         List[str]: List of output lines after the start marker, or all output lines if the marker
-#         is not found.
-#     """
-#     # Build the command snippet to run inside WSL (after env setup)
-#     inner_cmd = "echo --start-- && centralpage " + " ".join(args)
-
-#     # Run inside the centralpage-configured environment.
-#     stdout = run_in_centralpage_env(inner_cmd)
-
-#     lines = stdout.splitlines()
-#     try:
-#         start_index = lines.index("--start--") + 1
-#         return lines[start_index:]
-#     except ValueError:
-#         # If the marker is not found, return all lines as a list
-#         return lines
-
-
 def run_ami_helper(
     args: str,
     files: Union[Dict[str, Union[str, Path]], None] = None,
@@ -315,7 +285,7 @@ def get_metadata(
         if prov:
             target_ds = prov[-1]
 
-    lines = run_ami_helper(f"datasets metadata {scope} {target_ds} --json")
+    lines = run_ami_helper(f"datasets metadata {scope} {target_ds} -o json")
 
     # Join all lines and parse as JSON
     d = json.loads(" ".join(lines))

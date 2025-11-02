@@ -126,3 +126,26 @@ def test_get_addresses_for_keyword_all_types(mocker):
 
     # Verify we got all three types
     assert types_found == {"Baseline", "Systematic", "Alternative"}
+
+
+def test_get_metadata_tool(mocker):
+    """Server get_metadata tool returns JSON and passes through flag."""
+    mocked = mocker.patch(
+        "atlas_mcp.central_page.get_metadata",
+        return_value={
+            "Physics Comment": "NULL",
+            "Physics Short Name": "Py8EG_A14NNPDF23LO_jj_JZ9incl",
+        },
+    )
+
+    scope = "mc23_13p6TeV"
+    dataset = "mc23_13p6TeV.123456.Pythia8...DAOD_PHYS.e8514_s4162_r14622_p5855"
+    result = server.get_metadata(scope, dataset, use_top_of_provenance=True)
+
+    parsed = json.loads(result)
+    assert parsed["Physics Comment"] == "NULL"
+    assert parsed["Physics Short Name"] == "Py8EG_A14NNPDF23LO_jj_JZ9incl"
+
+    mocked.assert_called_once_with(
+        scope, dataset, use_top_of_provenance=True
+    )

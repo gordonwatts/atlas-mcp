@@ -288,7 +288,7 @@ def test_get_metadata_builds_correct_command(mocker):
     result = get_metadata(scope, dataset_name)
 
     # Verify the command was constructed correctly
-    mocked.assert_called_once_with(f"datasets metadata {scope} {dataset_name} --json")
+    mocked.assert_called_once_with(f"datasets metadata {scope} {dataset_name} -o json")
 
     # Verify the returned dictionary contains the expected fields
     assert isinstance(result, dict)

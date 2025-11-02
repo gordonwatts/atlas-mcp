@@ -281,3 +281,27 @@ def get_samples_for_run(scope: str, run_number: str, derivation: str) -> Dict[st
     d = json.loads(" ".join(lines))
 
     return d
+
+
+@cache.memoize()
+def get_metadata(scope: str, full_dataset_name: str) -> Dict[str, Any]:
+    """Returns metadata for a given dataset.
+
+    Args:
+        scope (str): Scope name (e.g., 'mc20_13TeV', 'mc23_13p6TeV')
+        full_dataset_name (str): Full dataset name
+
+    Returns:
+        Dict[str, Any]: Dictionary containing metadata fields such as:
+            - Physics Comment
+            - Physics Short Name
+            - Generator Name
+            - Filter Efficiency
+            - Cross Section (nb)
+    """
+    lines = run_ami_helper(f"datasets {scope} {full_dataset_name} --json")
+
+    # Join all lines and parse as JSON
+    d = json.loads(" ".join(lines))
+
+    return d

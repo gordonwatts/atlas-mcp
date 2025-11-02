@@ -5,6 +5,7 @@ from atlas_mcp.central_page import (
     get_allowed_scopes,
     run_on_wsl,
     get_samples_for_run,
+    get_metadata,
 )
 import subprocess
 from pathlib import Path
@@ -218,8 +219,11 @@ def test_get_samples_for_run_builds_correct_command(mocker, derivation, expected
     # Ensure cache doesn't short-circuit this test
     central_page_mod.cache.clear()
 
+    # Mock with valid JSON output
+    mock_json_output = ['{"datasets": ["ds1", "ds2"]}']
+
     mocked = mocker.patch(
-        "atlas_mcp.central_page.run_ami_helper", return_value=["ds1", "ds2"]
+        "atlas_mcp.central_page.run_ami_helper", return_value=mock_json_output
     )
 
     scope = "mc23_13p6TeV"
@@ -227,12 +231,12 @@ def test_get_samples_for_run_builds_correct_command(mocker, derivation, expected
 
     result = get_samples_for_run(scope, run_number, derivation)
 
-    # Returns exactly what ami-helper returns
-    assert result == ["ds1", "ds2"]
+    # Returns parsed JSON
+    assert result == {"datasets": ["ds1", "ds2"]}
 
     # Ensures we built the proper command
     mocked.assert_called_once_with(
-        f"datasets with-datatype {scope} {run_number} {expected_flag}"
+        f"datasets with-datatype {scope} {run_number} {expected_flag} -o json"
     )
 
 
@@ -250,3 +254,45 @@ def test_get_samples_for_run_invalid_derivation_raises(bad_derivation):
         get_samples_for_run("mc23_13p6TeV", "00473423", bad_derivation)
 
     assert "Invalid `derivation`" in str(excinfo.value)
+
+
+def test_get_metadata_builds_correct_command(mocker):
+    """Verify get_metadata constructs the ami-helper command correctly
+    and parses JSON output.
+    """
+    # Ensure cache doesn't short-circuit this test
+    central_page_mod.cache.clear()
+
+    # Mock the ami-helper output as JSON
+    mock_json_output = [
+        "{",
+        '  "Physics Comment": "NULL",',
+        '  "Physics Short Name": "Py8EG_A14NNPDF23LO_jj_JZ9incl",',
+        '  "Generator Name": "Pythia8(v.308)+EvtGen(v.2.1.1)",',
+        '  "Filter Efficiency": 0.01530918,',
+        '  "Cross Section (nb)": 0.000027822',
+        "}",
+    ]
+
+    mocked = mocker.patch(
+        "atlas_mcp.central_page.run_ami_helper", return_value=mock_json_output
+    )
+
+    scope = "mc23_13p6TeV"
+    dataset_name = (
+        "mc23_13p6TeV.123456.Pythia8_A14NNPDF23LO_jj_JZ9."
+        "deriv.DAOD_PHYS.e8514_s4162_r14622_p5855"
+    )
+
+    result = get_metadata(scope, dataset_name)
+
+    # Verify the command was constructed correctly
+    mocked.assert_called_once_with(f"datasets {scope} {dataset_name} --json")
+
+    # Verify the returned dictionary contains the expected fields
+    assert isinstance(result, dict)
+    assert result["Physics Comment"] == "NULL"
+    assert result["Physics Short Name"] == "Py8EG_A14NNPDF23LO_jj_JZ9incl"
+    assert result["Generator Name"] == "Pythia8(v.308)+EvtGen(v.2.1.1)"
+    assert result["Filter Efficiency"] == 0.01530918
+    assert result["Cross Section (nb)"] == 0.000027822

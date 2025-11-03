@@ -46,7 +46,7 @@ datasets associated with those hashtags.
 b. If it is an exotics signal or you can find anything in the hash tags, you can try searching in the name of the dataset. This
 is going to be a bit of a guess because there isn't an absolute naming convention in ATLAS. Use the lookup to find some datasets. And choose the one that looks most promising.
 
-3. Finally, with the run number for the event generation sample, you can ask for the associated datasets. You'll get back a list and one of the things they will have associated with them is the `period` (like `mc20a`). This is one of the things you'll need.
+3. With the run number for the event generation sample, you can ask for the associated datasets. You'll get back a list and one of the things they will have associated with them is the `period` (like `mc20a`). This is one of the things you'll need.
 
 4. Finally, you'll need to take each dataset and fetch the metadata. Do this for each sample. Combine the short name and description.
 

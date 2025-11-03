@@ -1,32 +1,13 @@
 ---
-description: Take a question and determine the ATLAS dataset.
+description: Given a user prompt, work with ATLAS metadata tools to determine an ATLAS Monte Carlo dataset or datasets
 tools:
   - atlas_mcp
+model: GPT-5 mini
 ---
 
-Your job is to analyze the user input below and just provide the dataset or datasets we will use execute the user's prompt.
+Your job is to analyze the user input below and provide the Monte Carlo dataset or datasets the user is referring to in their input. Detector datasets are not handled by this and should be ignored (e.g. data23, etc). Do not provide any code or any information on how to use the data. Your final reply should only be in the form below.
 
-User input:
-
-```text
-$ARGUMENTS
-```
-
-Use the following steps to determine the dataset that will be used to run the user's prompt:
-
-1. If the user has a `rucio` DID (Dataset IDentifier) in the statement, then return the DID directly to the user. A typical DID is `mc20_13TeV:mc20_13TeV.311312.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS35_ltlow.recon.AOD.e7270_s3234_r13201`.
-
-2. To search for ATLAS DID's, first determine which `scope` the user wants to use. This is connected with the run the user might want to use: the data and Monte Carlo are tied to the run, and the scope depends on those. Possible runs are Run 2 and Run 3 (Run 1 is not supported). Use atlas_mcp tool to determine what scope is what. If the user does not specify a run, assume Run 3.
-
-3. ATLAS has a standard set of recommended datasets for background Monte Carlo. These are grouped by `scope` and also by `addresses`. Use the tools to do to keyword searches for the appropriate `addresses` for datasets in a scope. Select the best address. If you have a choice, it should have `Baseline` as one of the tags in the address.
-
-4. Once you have an address, use the tool `atlas_mcp/get_samples_for_address` tool to find a particular dataset.
-
-5. Select the best matching EVNT dataset for the user question, or more than one if it isn't clear which one to use.
-
-6. Finally, use the `atlas_mcp/get_samples_for_evtgen` tool to find the actual dataset that matches the user's question. If you have a choice, select the one with the most recent period (highest mc letter), and pick the PHYSLITE dataset tier if the user hasn't requested anything specific.
-
-Please reply to the user in the following format:
+Your result must contain a complete ATLAS dataset and metadata in the following format. Each item and how to find it is discussed below. Note that the user may refer to more than one dataset, so a list is totally ok to return.
 
 ```text
 Scope: <scope>
@@ -36,8 +17,41 @@ Dataset:
     type: <type1>
     period: <period1>
     x_section: <x_section1>
-    k_factor: <k_factor1>
     gen_filter_eff: <gen_filter_eff1>
+    description: <description from meta-data>
+    comments: <anything relevant you need to add>
   - name: <DID2>
     ...
+```
+
+Before we get started on what we need to do, lets look at what is in an ATLAS dataset name:
+
+`mc20_13TeV:mc20_13TeV.311312.MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS35_ltlow.recon.AOD.e7270_s3234_r13201`
+
+- The `mc20_13TeV` is the scope (what run is it attached to)
+- Next is the run number, `311312` here. Each signal sample has a unique run number - and you can always identify the MC sample by the run number.
+- Next is the name - `MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS35_ltlow`. There is no absolute convention, unfortunately. For example, here this is a sample generated using the MadGraph generator, with Pythia doing the jet evolution. The sample generated is `HSS`, which is hidden sector, and LLP is long lived particles. And then the mass of the communicators and scalar in the model are 135 adn 35 GeV respectively. The `ltlow` refers to a generation lifetime. And this is unique for all the other samples as well.
+- `recion` is the set for this dataset. In this case, output of reconstruction directly. The other most common step is `deriv` - or derivation output. This is what we will use most often fo ranalysis work.
+- The datafile, `AOD` is next. For `recon` it can only be `AOD`. For `deriv` you'll see `DAOD_XXX`. The most common derivations are `PHYS` and `PHYSLITE`. `PHYSLITE` is the new small high speed format. It should be desired as long as the data needed is in it. Other derivations contain specialized data - and the user will have to name it explicitly.
+- The production tags, `e7270_s3234_r13201` refer to an AMI tag - which contains all the parameter used to run the 1) event generation, two the simulation, and 3) the reconstruction. Others are possible, and you'll see different tag lists depending on the file and how it was generated.
+
+1. To search for ATLAS DID's, first determine which `scope` the user wants to use. This is connected with the run the user might want to use: the data and Monte Carlo are tied to the run, and the scope depends on those. Possible runs are Run 2 and Run 3 (Run 1 is not supported). Use atlas_mcp tool to determine what scopes are available and a short description. If the user does not specify a run, assume Run 3.
+
+2. Searches for the dataset can be done several ways. If it is a Standard Model background, then one can try to search for hashtags. If not, then you may need to guess at keywords. If all of this fails, then you will need to ask the user for more help.
+
+a. hashtags are attached to all the official Standard Model datasets (e.g. dijet, top, Z, W, drell-yan, etc.). The datasets,
+curated by the PMG (Physics Modeling Group), all have 4 hierarchical hashtags associated with them. You can use the `atlas_mcp` tool to search for those. You'll get a list 4-tuples of hashtags. Select the one most promising and then get the
+datasets associated with those hashtags.
+
+b. If it is an exotics signal or you can find anything in the hash tags, you can try searching in the name of the dataset. This
+is going to be a bit of a guess because there isn't an absolute naming convention in ATLAS. Use the lookup to find some datasets. And choose the one that looks most promising.
+
+3. With the run number for the event generation sample, you can ask for the associated datasets. You'll get back a list and one of the things they will have associated with them is the `period` (like `mc20a`). This is one of the things you'll need.
+
+4. Finally, you'll need to take each dataset and fetch the metadata. Do this for each sample. Combine the short name and description.
+
+Here is the user input. Try to get the list of datasets in the above format by interpreting this.
+
+```text
+$ARGUMENTS
 ```

@@ -4,7 +4,6 @@ from typing import List
 from mcp.server.fastmcp import FastMCP
 
 import atlas_mcp.central_page as cp
-from atlas_mcp import prompts as myprompts
 
 mcp = FastMCP("atlas_standard_MonteCarlo_catalog")
 
@@ -97,10 +96,6 @@ def get_metadata(
         scope, dataset_name, use_top_of_provenance=use_top_of_provenance
     )
     return json.dumps(md)
-
-
-# Optional: register prompts so they appear as /mcp.myServer.greet
-myprompts.register(mcp)
 
 
 def main() -> None:

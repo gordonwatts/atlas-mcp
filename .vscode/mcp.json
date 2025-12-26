@@ -6,7 +6,9 @@
             "args": [
                 "run",
                 "-m",
-                "atlas_mcp.server"
+                "atlas_mcp.server",
+                "--transport",
+                "stdio"
             ],
             // "envFile": "${workspaceFolder}/.env",
             // "dev": {

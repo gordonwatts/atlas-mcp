@@ -1,12 +1,12 @@
 # atlas-mcp
 
-Exploring `mcp` servers that are tuned to run against ATLAS infrastructure
+Exploring `fastmcp` servers that are tuned to run against ATLAS infrastructure
 
 ## Introduction
 
-This is a place to collect some tooling that uses an `mcp` interface to expose ATLAS metadata to an LLM. At the moment everything here is very experimental.
+This is a place to collect some tooling that uses a `fastmcp` interface to expose ATLAS metadata to an LLM. At the moment everything here is very experimental.
 
-THe current tools expose limited amounts from the following datasources:
+The current tools expose limited amounts from the following datasources:
 
 - AMI dataset metadata
 - Rucio
@@ -29,9 +29,45 @@ Preparation:
 
 In the agent mode, set the LLM to something like `GPT-5 mini` (no need to waste tokens, this is fairly simple work), and then `/data all-hadronic ttbar`. Grant it permission.
 
+### Command Line
+
+The server supports two transport modes:
+
+#### Stdio Transport (default)
+
+Used by VS Code and other MCP clients that spawn servers as subprocesses:
+
+```bash
+uv run -m atlas_mcp.server --transport stdio
+```
+
+This is the default mode and is automatically used when running via VS Code's MCP configuration.
+
+#### HTTP Transport
+
+For direct API access or web-based clients:
+
+```bash
+uv run -m atlas_mcp.server --transport http --port 8080
+```
+
+The server will be available at `http://localhost:8080/mcp`. You can customize the port with the `--port` flag (default: 8080).
+
+Example using curl to list available tools:
+
+```bash
+curl -X POST http://localhost:8080/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}'
+```
+
 ## Testing
 
-Use `mcp dev src/atlas_mcp/server.py` to run locally with the test web interface.
+Use `fastmcp dev src/atlas_mcp/server.py` to run locally with the test web interface (if available), or run tests with:
+
+```bash
+uv run pytest
+```
 
 ## Sample Run in `vscode`
 

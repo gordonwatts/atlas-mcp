@@ -1,7 +1,8 @@
 import json
 from typing import List
 
-from mcp.server.fastmcp import FastMCP
+import typer
+from fastmcp import FastMCP
 
 import atlas_mcp.central_page as cp
 
@@ -98,10 +99,32 @@ def get_metadata(
     return json.dumps(md)
 
 
-def main() -> None:
-    # stdio is the default; this runs the server loop
-    mcp.run()
+app = typer.Typer(help="ATLAS MCP Server")
+
+
+@app.command()
+def main(
+    transport: str = typer.Option(
+        "stdio",
+        "--transport",
+        help="Transport mode: stdio (default) or http",
+    ),
+    port: int = typer.Option(
+        8080,
+        "--port",
+        help="Port for HTTP transport (default: 8080)",
+    ),
+) -> None:
+    """Run the ATLAS MCP server with the specified transport."""
+    if transport not in ["stdio", "http"]:
+        typer.echo(f"Error: Invalid transport '{transport}'. Choose 'stdio' or 'http'.")
+        raise typer.Exit(1)
+
+    if transport == "stdio":
+        mcp.run(transport="stdio")
+    else:
+        mcp.run(transport="streamable-http", port=port, host="localhost")
 
 
 if __name__ == "__main__":
-    main()
+    app()

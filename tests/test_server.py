@@ -15,8 +15,8 @@ def test_get_allowed_scopes(mocker):
     # Mock the central_page.get_allowed_scopes function
     mocker.patch("atlas_mcp.central_page.get_allowed_scopes", return_value=mock_scopes)
 
-    # Call the server function
-    result = server.get_allowed_scopes()
+    # Call the server function - access the underlying function from the FunctionTool
+    result = server.get_allowed_scopes.fn()
 
     # Verify the result is valid JSON
     parsed = json.loads(result)
@@ -60,8 +60,8 @@ def test_get_addresses_for_keyword_baseline_only(mocker):
         return_value=mock_addresses,
     )
 
-    # Call the server function with baseline_only=True (default)
-    result = server.get_addresses_for_keyword("mc23_13p6TeV", "Dijet")
+    # Call the server function with baseline_only=True (default) - access underlying function
+    result = server.get_addresses_for_keyword.fn("mc23_13p6TeV", "Dijet")
 
     # Verify the result is valid JSON
     parsed = json.loads(result)
@@ -105,8 +105,8 @@ def test_get_addresses_for_keyword_all_types(mocker):
         return_value=mock_addresses,
     )
 
-    # Call the server function with baseline_only=False
-    result = server.get_addresses_for_keyword(
+    # Call the server function with baseline_only=False - access underlying function
+    result = server.get_addresses_for_keyword.fn(
         "mc23_13p6TeV", "Dijet", baseline_only=False
     )
 
@@ -140,12 +140,11 @@ def test_get_metadata_tool(mocker):
 
     scope = "mc23_13p6TeV"
     dataset = "mc23_13p6TeV.123456.Pythia8...DAOD_PHYS.e8514_s4162_r14622_p5855"
-    result = server.get_metadata(scope, dataset, use_top_of_provenance=True)
+    # Access the underlying function from the FunctionTool
+    result = server.get_metadata.fn(scope, dataset, use_top_of_provenance=True)
 
     parsed = json.loads(result)
     assert parsed["Physics Comment"] == "NULL"
     assert parsed["Physics Short Name"] == "Py8EG_A14NNPDF23LO_jj_JZ9incl"
 
-    mocked.assert_called_once_with(
-        scope, dataset, use_top_of_provenance=True
-    )
+    mocked.assert_called_once_with(scope, dataset, use_top_of_provenance=True)

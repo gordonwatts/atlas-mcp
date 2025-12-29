@@ -99,6 +99,22 @@ def get_metadata(
     return json.dumps(md)
 
 
+@mcp.tool()
+def get_dataset_with_name(
+    scope: str, search_str: str, is_background: bool = True
+) -> str:
+    """Searches AMI for all EVNT tier datasets whose name contains `search_str`.
+
+    If `is_background` is True, only datasets that have PMG/central page defined
+    hash tags are returned. Do this first, and if it returns nothing, you can flip
+    the `is_background` to false to return everything.
+
+    Returns json string
+    """
+    ds = cp.get_dataset_with_name(scope, search_str, is_background)
+    return json.dumps(ds)
+
+
 app = typer.Typer(help="ATLAS MCP Server")
 
 

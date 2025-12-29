@@ -3,13 +3,19 @@
         "centralpage",
         "cvmfs",
         "DAOD",
+        "dijet",
+        "drell",
         "dsid",
+        "EVNT",
         "evtgen",
         "fastmcp",
         "hdamp",
         "lsetup",
+        "ltlow",
+        "NNPDF",
         "PHYSLITE",
         "rucio",
+        "streamable",
         "ttbar"
     ]
 }

@@ -39,12 +39,9 @@ Before we get started on what we need to do, lets look at what is in an ATLAS da
 
 2. Searches for the dataset can be done several ways. If it is a Standard Model background, then one can try to search for hashtags. If not, then you may need to guess at keywords. If all of this fails, then you will need to ask the user for more help.
 
-a. hashtags are attached to all the official Standard Model datasets (e.g. dijet, top, Z, W, drell-yan, etc.). The datasets,
-curated by the PMG (Physics Modeling Group), all have 4 hierarchical hashtags associated with them. You can use the `atlas_mcp` tool to search for those. You'll get a list 4-tuples of hashtags. Select the one most promising and then get the
-datasets associated with those hashtags.
+a. hashtags are attached to all the official Standard Model datasets (e.g. dijet, top, Z, W, drell-yan, etc.). The datasets, curated by the PMG (Physics Modeling Group), all have 4 hierarchical hashtags associated with them. You can use the `atlas_mcp` tool to search for those. You'll get a list 4-tuples of hashtags. Select the one most promising and then get the datasets associated with those hashtags.
 
-b. If it is an exotics signal or you can find anything in the hash tags, you can try searching in the name of the dataset. This
-is going to be a bit of a guess because there isn't an absolute naming convention in ATLAS. Use the lookup to find some datasets. And choose the one that looks most promising.
+b. If it is an exotics signal or you can find anything in the hash tags, you can try searching in the name of the dataset. This is going to be a bit of a guess because there isn't an absolute naming convention in ATLAS. Use the lookup to find some datasets. And choose the one that looks most promising.
 
 3. With the run number for the event generation sample, you can ask for the associated datasets. You'll get back a list and one of the things they will have associated with them is the `period` (like `mc20a`). This is one of the things you'll need.
 

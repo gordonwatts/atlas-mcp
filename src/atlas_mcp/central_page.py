@@ -227,16 +227,20 @@ def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
 def get_dataset_with_name(
     scope: str, search_str: str, is_background: bool
 ) -> List[Dict[str, str]]:
-    """Returns a list of EVTGEN sample names that contain the given search string.
+    """Returns a list of EVTGEN sample names and tags that contain the given search string
+    as a list of dictionaries.
 
     Args:
         scope (str): Scope name
         search_str (str): Search string to look for in dataset names
         is_background (bool): If True, search only background samples (PMG/central page);
             if False, then all are returned.
+    Returns:
+        List[Dict[str, str]]: List of dictionaries with dataset information. Each entry is a
+        dataset, and the name and hash tags are included.
     """
     cmd_args = [*["datasets", "with-name"], scope, search_str, "-o", "json"]
-    if is_background:
+    if not is_background:
         cmd_args.append("--non-cp")
 
     lines = run_ami_helper(" ".join(cmd_args))

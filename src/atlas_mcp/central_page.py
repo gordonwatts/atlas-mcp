@@ -233,8 +233,8 @@ def get_dataset_with_name(
     Args:
         scope (str): Scope name
         search_str (str): Search string to look for in dataset names
-        is_central_page (bool): If True, search only background samples (PMG/central page);
-            if False, then all are returned.
+        is_central_page (bool): If True, search only central page samples (PMG/central page);
+            if False, include non-central-page samples as well.
     Returns:
         List[Dict[str, str]]: List of dictionaries with dataset information. Each entry is a
         dataset, and the name and hash tags are included.

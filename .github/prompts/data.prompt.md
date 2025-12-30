@@ -1,7 +1,7 @@
 ---
 description: Given a user prompt, work with ATLAS metadata tools to determine an ATLAS Monte Carlo dataset or datasets
 tools:
-  - atlas_mcp
+  - atlas_mcp/*
 model: GPT-5 mini
 ---
 
@@ -31,7 +31,7 @@ Before we get started on what we need to do, lets look at what is in an ATLAS da
 - The `mc20_13TeV` is the scope (what run is it attached to)
 - Next is the run number, `311312` here. Each signal sample has a unique run number - and you can always identify the MC sample by the run number.
 - Next is the name - `MadGraphPythia8EvtGen_A14NNPDF31LO_HSS_LLP_mH125_mS35_ltlow`. There is no absolute convention, unfortunately. For example, here this is a sample generated using the MadGraph generator, with Pythia doing the jet evolution. The sample generated is `HSS`, which is hidden sector, and LLP is long lived particles. And then the mass of the communicators and scalar in the model are 135 adn 35 GeV respectively. The `ltlow` refers to a generation lifetime. And this is unique for all the other samples as well.
-- `recion` is the set for this dataset. In this case, output of reconstruction directly. The other most common step is `deriv` - or derivation output. This is what we will use most often fo ranalysis work.
+- `recon` is the set for this dataset. In this case, output of reconstruction directly. The other most common step is `deriv` - or derivation output. This is what we will use most often for analysis work.
 - The datafile, `AOD` is next. For `recon` it can only be `AOD`. For `deriv` you'll see `DAOD_XXX`. The most common derivations are `PHYS` and `PHYSLITE`. `PHYSLITE` is the new small high speed format. It should be desired as long as the data needed is in it. Other derivations contain specialized data - and the user will have to name it explicitly.
 - The production tags, `e7270_s3234_r13201` refer to an AMI tag - which contains all the parameter used to run the 1) event generation, two the simulation, and 3) the reconstruction. Others are possible, and you'll see different tag lists depending on the file and how it was generated.
 
@@ -39,12 +39,9 @@ Before we get started on what we need to do, lets look at what is in an ATLAS da
 
 2. Searches for the dataset can be done several ways. If it is a Standard Model background, then one can try to search for hashtags. If not, then you may need to guess at keywords. If all of this fails, then you will need to ask the user for more help.
 
-a. hashtags are attached to all the official Standard Model datasets (e.g. dijet, top, Z, W, drell-yan, etc.). The datasets,
-curated by the PMG (Physics Modeling Group), all have 4 hierarchical hashtags associated with them. You can use the `atlas_mcp` tool to search for those. You'll get a list 4-tuples of hashtags. Select the one most promising and then get the
-datasets associated with those hashtags.
+a. hashtags are attached to all the official Standard Model datasets (e.g. dijet, top, Z, W, drell-yan, etc.). The datasets, curated by the PMG (Physics Modeling Group), all have 4 hierarchical hashtags associated with them. You can use the `atlas_mcp` tool to search for those. You'll get a list 4-tuples of hashtags. Select the one most promising and then get the datasets associated with those hashtags.
 
-b. If it is an exotics signal or you can find anything in the hash tags, you can try searching in the name of the dataset. This
-is going to be a bit of a guess because there isn't an absolute naming convention in ATLAS. Use the lookup to find some datasets. And choose the one that looks most promising.
+b. If it is an exotics signal or you can find anything in the hash tags, you can try searching in the name of the dataset. This is going to be a bit of a guess because there isn't an absolute naming convention in ATLAS. Use the lookup to find some datasets. And choose the one that looks most promising.
 
 3. With the run number for the event generation sample, you can ask for the associated datasets. You'll get back a list and one of the things they will have associated with them is the `period` (like `mc20a`). This is one of the things you'll need.
 

@@ -1,7 +1,7 @@
 ---
 description: Given a user prompt, work with ATLAS metadata tools to determine an ATLAS Monte Carlo dataset or datasets
 tools:
-  - atlas_mcp
+  - atlas_mcp/*
 model: GPT-5 mini
 ---
 

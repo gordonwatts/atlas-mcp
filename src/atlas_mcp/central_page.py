@@ -223,7 +223,7 @@ def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
     return output
 
 
-# @cache.memoize()
+@cache.memoize()
 def get_dataset_with_name(
     scope: str, search_str: str, is_background: bool
 ) -> List[Dict[str, str]]:

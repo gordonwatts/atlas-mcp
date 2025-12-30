@@ -100,17 +100,17 @@ def get_metadata(
 
 
 @mcp.tool()
-def get_dataset_with_name(scope: str, search_str: str, is_background: bool) -> str:
+def get_dataset_with_name(scope: str, search_str: str, is_central_page: bool) -> str:
     """Searches AMI for all EVNT tier datasets whose name contains `search_str`.
 
-    If you know you are looking for a standard model dataset, is_background should
-    be set to true. If you are looking for something exotic, then is_background
-    should be false. If `is_background` is true, then the code will require there
+    If you know you are looking for a standard model dataset, is_central_page should
+    be set to true. If you are looking for something exotic, then is_central_page
+    should be false. If `is_central_page` is true, then the code will require there
     be PMG hashtags associated with the sample.
 
     Returns json string
     """
-    ds = cp.get_dataset_with_name(scope, search_str, is_background)
+    ds = cp.get_dataset_with_name(scope, search_str, is_central_page)
     return json.dumps(ds)
 
 

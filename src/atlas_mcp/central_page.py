@@ -165,7 +165,15 @@ def get_samples_for_run(scope: str, run_number: int, derivation: str) -> Dict[st
 
     # Get the campaign for each dataset.
     short_scope = scope.split("_")[0]
-    info = {ds: get_campaign(short_scope, ds) for ds in good_ds}
+
+    def get_campaign_with_exception(ds: str) -> str:
+        try:
+            campaign = get_campaign(short_scope, ds)
+        except Exception:
+            campaign = ""
+        return campaign
+
+    info = {ds: get_campaign_with_exception(ds) for ds in good_ds}
 
     return info
 

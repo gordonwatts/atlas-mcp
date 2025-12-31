@@ -5,7 +5,13 @@ description = "MCP Agents to help with ATLAS physics analysis"
 readme = "README.md"
 authors = [{ name = "Gordon Watts", email = "gwatts@uw.edu" }]
 requires-python = ">=3.13"
-dependencies = ["diskcache>=5.6.3", "fastmcp", "pydantic>=2.11.9", "typer"]
+dependencies = [
+    "diskcache>=5.6.3",
+    "fastmcp",
+    "pydantic>=2.11.9",
+    "typer",
+    "ami-helper",
+]
 
 [project.optional-dependencies]
 test = [

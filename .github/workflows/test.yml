@@ -22,16 +22,11 @@ jobs:
       run: |
         pip install -e ".[test]"
     
-    - name: Run black
+    - name: Run black and flake8
       run: |
         black --check src tests
-    
-    - name: Run flake8
-      run: |
-        source .venv/bin/activate
         flake8 src tests --max-line-length=99
     
     - name: Run tests
       run: |
-        source .venv/bin/activate
         pytest

@@ -84,19 +84,19 @@ def test_get_addresses_for_keyword_all_types(mocker):
     mock_addresses = [
         CentralPageHashAddress(
             scope="mc23_13p6TeV",
-            hash_tags=["JetPhoton", "Dijet", "Baseline", "Pythia8"],
+            hash_tags=("JetPhoton", "Dijet", "Baseline", "Pythia8"),
         ),
         CentralPageHashAddress(
             scope="mc23_13p6TeV",
-            hash_tags=["JetPhoton", "Dijet", "Systematic", "Sherpa2214"],
+            hash_tags=("JetPhoton", "Dijet", "Systematic", "Sherpa2214"),
         ),
         CentralPageHashAddress(
             scope="mc23_13p6TeV",
-            hash_tags=["JetPhoton", "Dijet", "Alternative", "Herwig72"],
+            hash_tags=("JetPhoton", "Dijet", "Alternative", "Herwig72"),
         ),
         CentralPageHashAddress(
             scope="mc23_13p6TeV",
-            hash_tags=["JetPhoton", "Dijet", "Baseline", "Sherpa"],
+            hash_tags=("JetPhoton", "Dijet", "Baseline", "Sherpa"),
         ),
     ]
 

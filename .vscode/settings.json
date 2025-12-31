@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "allhad",
         "centralpage",
         "cvmfs",
         "DAOD",
@@ -8,16 +9,22 @@
         "dijet",
         "drell",
         "dsid",
+        "evgen",
         "EVNT",
         "evtgen",
+        "excinfo",
         "fastmcp",
+        "hashability",
         "hdamp",
+        "Herwig",
         "lsetup",
         "ltlow",
         "NNPDF",
         "PHYSLITE",
         "rucio",
+        "simul",
         "streamable",
-        "ttbar"
+        "ttbar",
+        "venv"
     ]
 }

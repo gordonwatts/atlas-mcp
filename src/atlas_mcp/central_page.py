@@ -201,11 +201,11 @@ def get_metadata(
     # metadata may not make sense.
     target_ds = full_dataset_name
     if use_top_of_provenance:
-        prov = get_provenance(scope, full_dataset_name)
+        prov = ami.get_provenance(scope, full_dataset_name)
         if prov:
             target_ds = prov[-1]
 
-    d_meta = get_metadata(scope, target_ds)
+    d_meta = ami.get_metadata(scope, target_ds)
 
     return d_meta
 
@@ -224,6 +224,6 @@ def get_provenance(scope: str, dataset_name: str) -> List[str]:
         List[str]: List of dataset names in the provenance chain, one per line
     """
 
-    ds_list = get_provenance(scope, dataset_name)
+    ds_list = ami.get_provenance(scope, dataset_name)
 
     return ds_list

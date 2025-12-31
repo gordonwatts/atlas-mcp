@@ -89,9 +89,7 @@ def get_address_for_keyword(
 
     # Fetch the info from AMI (which is where central_page gets
     # the info from) for any of the hash tags that fit this search
-    # string.
-
-    # Now fill them in with all possible values.
+    # string, and then fill in the partial list.
     partial_hashtag_list = ami.find_hashtag(scope, keywords[0])
     ca_list = [t for ht in partial_hashtag_list for t in ami.find_hashtag_tuples(ht)]
 

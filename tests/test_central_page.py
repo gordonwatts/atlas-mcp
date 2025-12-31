@@ -1,5 +1,6 @@
 from atlas_mcp.central_page import (
     get_allowed_scopes,
+    get_address_for_keyword,
 )
 from ami_helper.datamodel import CentralPageHashAddress
 
@@ -34,6 +35,189 @@ def test_central_page_address_hashable():
     # Test they can be used as dict keys
     cache_dict = {addr1: "value1"}  # type: ignore[Unhashable]
     assert cache_dict[addr2] == "value1"
+
+
+def test_get_address_for_keyword_single_keyword(mocker):
+    """Test get_address_for_keyword with a single keyword string."""
+    # Mock ami.find_hashtag to return partial addresses
+    mock_partial_addr1 = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", None, None, None)
+    )
+    mock_partial_addr2 = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbarMET", None, None, None)
+    )
+
+    # Mock ami.find_hashtag_tuples to return complete addresses
+    mock_complete_addr1 = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", "allhad", "Baseline", "PowhegPythia")
+    )
+    mock_complete_addr2 = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", "dilep", "Baseline", "PowhegPythia")
+    )
+    mock_complete_addr3 = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbarMET", "allhad", "Baseline", "Sherpa")
+    )
+
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag",
+        return_value=[mock_partial_addr1, mock_partial_addr2],
+    )
+
+    # Mock find_hashtag_tuples to return different complete addresses for each partial
+    def mock_find_tuples(partial_addr):
+        if partial_addr.hash_tags[0] == "ttbar":
+            return [mock_complete_addr1, mock_complete_addr2]
+        else:  # ttbarMET
+            return [mock_complete_addr3]
+
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag_tuples", side_effect=mock_find_tuples
+    )
+
+    result = get_address_for_keyword("mc23_13p6TeV", "ttbar")
+
+    # Should return all three complete addresses since they all contain "ttbar"
+    assert len(result) == 3
+    assert mock_complete_addr1 in result
+    assert mock_complete_addr2 in result
+    assert mock_complete_addr3 in result
+
+
+def test_get_address_for_keyword_multiple_keywords(mocker):
+    """Test get_address_for_keyword with multiple keywords as a list."""
+    mock_partial_addr = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", None, None, None)
+    )
+
+    # Create addresses with different hashtags
+    mock_complete_addr1 = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", "allhad", "Baseline", "PowhegPythia")
+    )
+    mock_complete_addr2 = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", "dilep", "Baseline", "Sherpa")
+    )
+    mock_complete_addr3 = CentralPageHashAddress(
+        scope="mc23_13p6TeV",
+        hash_tags=("ttbar", "allhad", "Systematic", "PowhegHerwig"),
+    )
+
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag", return_value=[mock_partial_addr]
+    )
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag_tuples",
+        return_value=[mock_complete_addr1, mock_complete_addr2, mock_complete_addr3],
+    )
+
+    # Search for ttbar AND allhad
+    result = get_address_for_keyword("mc23_13p6TeV", ["ttbar", "allhad"])
+
+    # Only addresses containing both "ttbar" and "allhad" should be returned
+    assert len(result) == 2
+    assert mock_complete_addr1 in result
+    assert mock_complete_addr3 in result
+    assert mock_complete_addr2 not in result  # doesn't contain "allhad"
+
+
+def test_get_address_for_keyword_case_insensitive(mocker):
+    """Test that keyword matching is case-insensitive."""
+    mock_partial_addr = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("TTbar", None, None, None)
+    )
+
+    mock_complete_addr = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("TTbar", "AllHad", "Baseline", "PowhegPythia")
+    )
+
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag", return_value=[mock_partial_addr]
+    )
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag_tuples",
+        return_value=[mock_complete_addr],
+    )
+
+    # Search with lowercase when tags are mixed case
+    result = get_address_for_keyword("mc23_13p6TeV", "ttbar")
+
+    assert len(result) == 1
+    assert mock_complete_addr in result
+
+
+def test_get_address_for_keyword_no_matches(mocker):
+    """Test get_address_for_keyword when no addresses match the keywords."""
+    mock_partial_addr = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", None, None, None)
+    )
+
+    mock_complete_addr = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", "allhad", "Baseline", "PowhegPythia")
+    )
+
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag", return_value=[mock_partial_addr]
+    )
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag_tuples",
+        return_value=[mock_complete_addr],
+    )
+
+    # Search for keywords that won't match
+    result = get_address_for_keyword("mc23_13p6TeV", ["ttbar", "nonexistent"])
+
+    assert len(result) == 0
+
+
+def test_get_address_for_keyword_empty_partial_list(mocker):
+    """Test get_address_for_keyword when ami.find_hashtag returns no results."""
+    mocker.patch("atlas_mcp.central_page.ami.find_hashtag", return_value=[])
+
+    result = get_address_for_keyword("mc23_13p6TeV", "nonexistent")
+
+    assert len(result) == 0
+
+
+def test_get_address_for_keyword_filters_none_hashtags(mocker):
+    """Test that filtering correctly handles None values in hashtags."""
+    mock_partial_addr = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", None, None, None)
+    )
+
+    # Create address with None in the middle
+    mock_complete_addr = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", None, "Baseline", "PowhegPythia")
+    )
+
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag", return_value=[mock_partial_addr]
+    )
+    mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag_tuples",
+        return_value=[mock_complete_addr],
+    )
+
+    # Search should not crash on None values
+    result = get_address_for_keyword("mc23_13p6TeV", "ttbar")
+
+    assert len(result) == 1
+    assert mock_complete_addr in result
+
+
+def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
+    """Test that only the first keyword is used for the AMI search."""
+    mock_partial_addr = CentralPageHashAddress(
+        scope="mc23_13p6TeV", hash_tags=("ttbar", None, None, None)
+    )
+
+    mocker_find_hashtag = mocker.patch(
+        "atlas_mcp.central_page.ami.find_hashtag", return_value=[mock_partial_addr]
+    )
+    mocker.patch("atlas_mcp.central_page.ami.find_hashtag_tuples", return_value=[])
+
+    get_address_for_keyword("mc23_13p6TeV", ["ttbar", "allhad", "baseline"])
+
+    # Verify find_hashtag was called only with the first keyword
+    mocker_find_hashtag.assert_called_once_with("mc23_13p6TeV", "ttbar")
 
 
 # @pytest.mark.parametrize(

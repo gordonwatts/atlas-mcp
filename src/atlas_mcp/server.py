@@ -41,7 +41,7 @@ def get_addresses_for_keyword(
     addresses = cp.get_address_for_keyword(scope, keyword)
     if baseline_only:
         addresses = [addr for addr in addresses if addr.hash_tags[2] == "Baseline"]
-    return json.dumps([addr.model_dump() for addr in addresses])
+    return json.dumps([addr.to_dict() for addr in addresses])
 
 
 @mcp.tool()
@@ -56,7 +56,7 @@ def get_evtgen_for_address(scope: str, hashtags: List[str]) -> str:
     if len(hashtags) != 4:
         raise ValueError("hashtags must be a list of 4 strings")
 
-    cpa = cp.CentralPageAddress(scope=scope, hash_tags=tuple(hashtags))
+    cpa = cp.CentralPageHashAddress(scope=scope, hash_tags=tuple(hashtags))
     samples = cp.get_evtgen_for_address(cpa)
     return json.dumps(samples)
 
@@ -76,7 +76,7 @@ def get_samples_for_run(scope: str, run_number: str, data_tier: str) -> str:
 
     Returns json
     """
-    results = cp.get_samples_for_run(scope, run_number, data_tier)
+    results = cp.get_samples_for_run(scope, int(run_number), data_tier)
     return json.dumps(results)
 
 

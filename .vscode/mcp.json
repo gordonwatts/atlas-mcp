@@ -2,9 +2,8 @@
     "servers": {
         "atlas_mcp": {
             "type": "stdio",
-            "command": "uv",
+            "command": ".venv/bin/python",
             "args": [
-                "run",
                 "-m",
                 "atlas_mcp.server",
                 "--transport",
@@ -17,5 +16,15 @@
             //     ]
             // }
         }
+        // "atlas_mcp": { // This is for more robust running of released thing!
+        //     "type": "stdio",
+        //     "command": "uv",
+        //     "args": [
+        //         "run",
+        //         "-m",
+        //         "atlas_mcp.server",
+        //         "--transport",
+        //         "stdio"
+        //     ],
     }
 }

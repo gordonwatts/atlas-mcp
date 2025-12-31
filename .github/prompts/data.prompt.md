@@ -1,5 +1,5 @@
 ---
-description: Given a user prompt, work with ATLAS metadata tools to determine an ATLAS Monte Carlo dataset or datasets
+description: Determine an ATLAS Monte Carlo dataset or datasets using ami and rucio via atlas_mcp tools.
 tools:
   - atlas_mcp/*
 model: GPT-5 mini

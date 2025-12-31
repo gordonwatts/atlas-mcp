@@ -1,9 +1,11 @@
 import os
 from pathlib import Path
-from typing import Any, List, Union, Dict, Tuple
-import base64
-import json
+from typing import Any, Dict, List
 
+import ami_helper.ami as ami
+from ami_helper.datamodel import CentralPageHashAddress, get_campaign
+from ami_helper.rucio import has_files
+from ami_helper.utils import normalize_derivation_name
 from diskcache import Cache
 from pydantic import BaseModel, Field
 
@@ -15,13 +17,6 @@ cache_dir = os.environ.get(
     "ATLAS_MCP_CACHE_DIR", str(Path.home() / ".cache" / "atlas_mcp_cache")
 )
 cache = Cache(cache_dir)
-
-
-class CentralPageAddress(BaseModel):
-    model_config = {"frozen": True}
-
-    scope: str = Field(description="Data scope name")
-    hash_tags: Tuple[str, ...] = Field(description="Tuple of hash tags")
 
 
 class CentralPageScope(BaseModel):
@@ -75,111 +70,14 @@ def get_allowed_scopes() -> List[CentralPageScope]:
     return allowed_scopes
 
 
-def run_ami_helper(
-    args: str,
-    files: Union[Dict[str, Union[str, Path]], None] = None,
-) -> List[str]:
-    """Runs the ami-helper command with the given arguments and returns the output as a list of
-    lines.
-
-    This wraps `run_on_wsl` which runs arbitrary commands on a configured WSL
-    distribution. We set up the ATLAS environment, lsetup centralpage, echo a start marker,
-    then run `centralpage` with the provided args and return the output lines after the marker.
-
-    Args:
-        args (List[str]): List of arguments to pass to the centralpage command
-
-    Returns:
-        List[str]: List of output lines after the start marker, or all output lines if the marker
-        is not found.
-    """
-    # Build the command snippet to run inside WSL (after env setup)
-    inner_cmd = "echo --start-- && uvx --python=3.11 ami-helper " + args
-
-    # Run inside the centralpage-configured environment.
-    stdout = run_on_wsl(inner_cmd, files=files)
-
-    lines = stdout.splitlines()
-    try:
-        start_index = lines.index("--start--") + 1
-        return lines[start_index:]
-    except ValueError:
-        # If the marker is not found, return all lines as a list
-        return lines
-
-
-def run_on_wsl(
-    command: str,
-    distro: str = "atlas_al9",
-    files: Union[Dict[str, Union[str, Path]], None] = None,
-) -> str:
-    """Run an arbitrary shell command inside a WSL distro and return raw stdout.
-
-    Args:
-        command (str): Shell command to run inside the WSL session.
-        distro (str): WSL distribution name to use.
-        files (Dict[str, Union[str, Path]], optional): Dictionary of files to copy to /tmp
-            in WSL before running the command. Keys are filenames in /tmp, values can be
-            strings (content) or Path objects (file paths to copy).
-
-    Returns:
-        str: Raw stdout from the executed command.
-    """
-    import subprocess
-
-    # If files are provided, copy them to /tmp in WSL first
-    if files:
-        for filename, file_data in files.items():
-            wsl_path = f"/tmp/{filename}"
-
-            if isinstance(file_data, Path):
-                # File path provided - lets read and write the file.
-                if not file_data.exists():
-                    raise FileNotFoundError(f"File not found: {file_data}")
-
-                # Load the file in as a massive string
-                with open(file_data, "r", encoding="utf-8") as f:
-                    file_data = f.read()
-
-            if isinstance(file_data, str):
-                # File content provided as string - write to temp file in WSL
-                encoded_content = base64.b64encode(file_data.encode("utf-8")).decode(
-                    "ascii"
-                )
-                copy_cmd = [
-                    "wsl",
-                    "-d",
-                    distro,
-                    "bash",
-                    "-c",
-                    f"echo '{encoded_content}' | base64 -d > {wsl_path}",
-                ]
-                copy_result = subprocess.run(copy_cmd, capture_output=True, text=True)
-                if copy_result.returncode != 0:
-                    raise RuntimeError(
-                        f"Failed to copy string content to WSL: {copy_result.stderr}"
-                    )
-
-    cmd = ["wsl", "-d", distro, "bash", "-l", "-c", command]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"command failed with return code {result.returncode}: {result.stderr}"
-        )
-
-    # Return raw stdout; higher-level callers can choose to split/parse it.
-    return result.stdout
-
-
 def get_address_for_keyword(
     scope: str, keywords: str | List[str]
-) -> List[CentralPageAddress]:
-    """Returns a CentralPageAddress object for a given scope and keyword.
+) -> List[CentralPageHashAddress]:
+    """Returns a CentralPageHashAddress object for a given scope and keyword.
 
     This searches the hash tag tree up to depth 4 for a hash tag that
     contains the given keyword. If found, it returns the corresponding
-    CentralPageAddress object. If not found, it returns None.
+    CentralPageHashAddress object. If not found, it returns None.
 
     Args:
         scope (str): Scope name
@@ -189,38 +87,32 @@ def get_address_for_keyword(
     if isinstance(keywords, str):
         keywords = [keywords]
 
-    # Get the keywords that match the first one, and then search those.
-    lines = run_ami_helper(f"hashtags find {scope} {keywords[0]}")
-    print(lines)
-    addresses = []
-    for ln in lines:
-        parts = ln.split()
-        if len(parts) != 4:
-            continue
-        addr = CentralPageAddress(
-            scope=scope,
-            hash_tags=tuple(parts),
+    # Fetch the info from AMI (which is where central_page gets
+    # the info from) for any of the hash tags that fit this search
+    # string, and then fill in the partial list.
+    partial_hashtag_list = ami.find_hashtag(scope, keywords[0])
+    ca_list = [t for ht in partial_hashtag_list for t in ami.find_hashtag_tuples(ht)]
+
+    def has_keyword(addr: CentralPageHashAddress, keyword: str) -> bool:
+        return any(
+            keyword.lower() in t.lower() for t in addr.hash_tags if t is not None
         )
-        addresses.append(addr)
 
-    def has_keyword(addr: CentralPageAddress, keyword: str) -> bool:
-        return any(keyword.lower() in t.lower() for t in addr.hash_tags)
-
-    matches = [a for a in addresses if all(has_keyword(a, kw) for kw in keywords)]
+    matches = [a for a in ca_list if all(has_keyword(a, kw) for kw in keywords)]
 
     return matches
 
 
 @cache.memoize()
-def get_evtgen_for_address(cpa: CentralPageAddress) -> List[str]:
-    """Returns a list of EVTGEN sample names for a given CentralPageAddress.
+def get_evtgen_for_address(cpa: CentralPageHashAddress) -> List[str]:
+    """Returns a list of EVTGEN sample names for a given CentralPageHashAddress.
 
     Args:
-        cpa (CentralPageAddress): CentralPageAddress object
+        cpa (CentralPageHashAddress): CentralPageHashAddress object
     """
-    cmd_args = [*["datasets", "with-hashtags"], f"{cpa.scope}", *cpa.hash_tags]
-    output = run_ami_helper(" ".join(cmd_args))
-    return output
+
+    dids = ami.find_dids_with_hashtags(cpa)
+    return dids
 
 
 @cache.memoize()
@@ -239,43 +131,51 @@ def get_dataset_with_name(
         List[Dict[str, str]]: List of dictionaries with dataset information. Each entry is a
         dataset, and the name and hash tags are included.
     """
-    cmd_args = [*["datasets", "with-name"], scope, search_str, "-o", "json"]
-    if not is_central_page:
-        cmd_args.append("--non-cp")
 
-    lines = run_ami_helper(" ".join(cmd_args))
+    ds = ami.find_dids_with_name(scope, search_str, require_pmg=is_central_page)
 
-    return json.loads(" ".join(lines))
+    r_dict = [
+        {
+            "name": d[0],
+            "HashTag 1": d[1].hash_tags[0],
+            "HashTag 2": d[1].hash_tags[1],
+            "HashTag 3": d[1].hash_tags[2],
+            "HashTag 4": d[1].hash_tags[3],
+        }
+        for d in ds
+    ]
+
+    return r_dict
 
 
 @cache.memoize()
-def get_samples_for_run(scope: str, run_number: str, derivation: str) -> Dict[str, Any]:
-    """Returns a list of rucio dataset names for a given EVTGEN sample.
+def get_samples_for_run(scope: str, run_number: int, derivation: str) -> Dict[str, Any]:
+    """Returns a list of rucio dataset names for a given run number.
 
     Args:
         scope (str): Scope name
-        evtgen_sample (str): EVTGEN sample name
+        run_number (str): EVTGEN sample name
         derivation (str): Derivation type, e.g. 'PHYS', 'AOD', 'PHYSLITE', 'DAOD_LLP1', etc.
     """
-    derivation_flag = ""
-    if derivation.upper() == "PHYS":
-        derivation_flag = "DAOD_PHYS"
-    elif derivation.upper() == "PHYSLITE":
-        derivation_flag = "DAOD_PHYSLITE"
-    elif derivation.upper().startswith("DAOD_"):
-        derivation_flag = derivation.upper()
-    else:
-        raise RuntimeError(
-            "Invalid `derivation` - must be `AOD`, `PHYS`, `PHYSLITE`, `DAOD_xxx`"
-        )
 
-    lines = run_ami_helper(
-        f"datasets with-datatype {scope} {run_number} {derivation_flag} -o json"
-    )
+    # Get all the datasets that match, make sure that they have files.
+    derivation_flag = normalize_derivation_name(derivation)
+    ds_list = ami.get_by_datatype(scope, run_number, derivation_flag)
+    good_ds = [ds for ds in ds_list if has_files(scope, ds)]
 
-    d = json.loads(" ".join(lines))
+    # Get the campaign for each dataset.
+    short_scope = scope.split("_")[0]
 
-    return d
+    def get_campaign_with_exception(ds: str) -> str:
+        try:
+            campaign = get_campaign(short_scope, ds)
+        except Exception:
+            campaign = ""
+        return campaign
+
+    info = {ds: get_campaign_with_exception(ds) for ds in good_ds}
+
+    return info
 
 
 @cache.memoize()
@@ -304,18 +204,18 @@ def get_metadata(
             - Filter Efficiency
             - Cross Section (nb)
     """
+
+    # Make sure we are looking at an EVNT dataset - otherwise
+    # metadata may not make sense.
     target_ds = full_dataset_name
     if use_top_of_provenance:
-        prov = get_provenance(scope, full_dataset_name)
+        prov = ami.get_provenance(scope, full_dataset_name)
         if prov:
             target_ds = prov[-1]
 
-    lines = run_ami_helper(f"datasets metadata {scope} {target_ds} -o json")
+    d_meta = ami.get_metadata(scope, target_ds)
 
-    # Join all lines and parse as JSON
-    d = json.loads(" ".join(lines))
-
-    return d
+    return d_meta
 
 
 @cache.memoize()
@@ -331,6 +231,7 @@ def get_provenance(scope: str, dataset_name: str) -> List[str]:
     Returns:
         List[str]: List of dataset names in the provenance chain, one per line
     """
-    lines = run_ami_helper(f"datasets provenance {scope} {dataset_name}")
 
-    return lines
+    ds_list = ami.get_provenance(scope, dataset_name)
+
+    return ds_list

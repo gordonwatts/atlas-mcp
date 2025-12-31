@@ -1,5 +1,6 @@
 import json
-from atlas_mcp.central_page import CentralPageAddress, CentralPageScope
+from atlas_mcp.central_page import CentralPageScope
+from ami_helper.datamodel import CentralPageHashAddress
 from atlas_mcp import server
 
 
@@ -36,19 +37,19 @@ def test_get_addresses_for_keyword_baseline_only(mocker):
     """Test get_addresses_for_keyword with baseline_only=True (default)."""
     # Create mock data with mix of Baseline, Systematic, and Alternative
     mock_addresses = [
-        CentralPageAddress(
+        CentralPageHashAddress(
             scope="mc23_13p6TeV",
             hash_tags=("JetPhoton", "Dijet", "Baseline", "Pythia8"),
         ),
-        CentralPageAddress(
+        CentralPageHashAddress(
             scope="mc23_13p6TeV",
             hash_tags=("JetPhoton", "Dijet", "Systematic", "Sherpa2214"),
         ),
-        CentralPageAddress(
+        CentralPageHashAddress(
             scope="mc23_13p6TeV",
             hash_tags=("JetPhoton", "Dijet", "Alternative", "Herwig72"),
         ),
-        CentralPageAddress(
+        CentralPageHashAddress(
             scope="mc23_13p6TeV",
             hash_tags=("JetPhoton", "Dijet", "Baseline", "Sherpa"),
         ),
@@ -69,9 +70,9 @@ def test_get_addresses_for_keyword_baseline_only(mocker):
     # Should only return Baseline addresses (2 out of 4)
     assert len(parsed) == 2
 
-    # Verify each result can be deserialized back to CentralPageAddress
+    # Verify each result can be deserialized back to CentralPageHashAddress
     for item in parsed:
-        addr = CentralPageAddress(**item)
+        addr = CentralPageHashAddress(**item)
         assert addr.scope == "mc23_13p6TeV"
         assert addr.hash_tags[2] == "Baseline"
         assert "Dijet" in addr.hash_tags
@@ -81,19 +82,19 @@ def test_get_addresses_for_keyword_all_types(mocker):
     """Test get_addresses_for_keyword with baseline_only=False."""
     # Create mock data with mix of Baseline, Systematic, and Alternative
     mock_addresses = [
-        CentralPageAddress(
+        CentralPageHashAddress(
             scope="mc23_13p6TeV",
             hash_tags=("JetPhoton", "Dijet", "Baseline", "Pythia8"),
         ),
-        CentralPageAddress(
+        CentralPageHashAddress(
             scope="mc23_13p6TeV",
             hash_tags=("JetPhoton", "Dijet", "Systematic", "Sherpa2214"),
         ),
-        CentralPageAddress(
+        CentralPageHashAddress(
             scope="mc23_13p6TeV",
             hash_tags=("JetPhoton", "Dijet", "Alternative", "Herwig72"),
         ),
-        CentralPageAddress(
+        CentralPageHashAddress(
             scope="mc23_13p6TeV",
             hash_tags=("JetPhoton", "Dijet", "Baseline", "Sherpa"),
         ),
@@ -116,10 +117,10 @@ def test_get_addresses_for_keyword_all_types(mocker):
     # Should return all addresses (4 out of 4)
     assert len(parsed) == 4
 
-    # Verify each result can be deserialized back to CentralPageAddress
+    # Verify each result can be deserialized back to CentralPageHashAddress
     types_found = set()
     for item in parsed:
-        addr = CentralPageAddress(**item)
+        addr = CentralPageHashAddress(**item)
         assert addr.scope == "mc23_13p6TeV"
         assert "Dijet" in addr.hash_tags
         types_found.add(addr.hash_tags[2])

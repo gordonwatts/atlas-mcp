@@ -1,21 +1,31 @@
 {
     "cSpell.words": [
+        "allhad",
         "centralpage",
+        "ctau",
         "cvmfs",
         "DAOD",
+        "datamodel",
+        "dids",
         "dijet",
         "drell",
         "dsid",
+        "evgen",
         "EVNT",
         "evtgen",
+        "excinfo",
         "fastmcp",
+        "hashability",
         "hdamp",
+        "Herwig",
         "lsetup",
         "ltlow",
         "NNPDF",
         "PHYSLITE",
         "rucio",
+        "simul",
         "streamable",
-        "ttbar"
+        "ttbar",
+        "venv"
     ]
 }

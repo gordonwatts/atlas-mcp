@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 
 import ami_helper.ami as ami
 from ami_helper.datamodel import CentralPageHashAddress, get_campaign
-from ami_helper.ruicio import has_files
+from ami_helper.rucio import has_files
 from ami_helper.utils import normalize_derivation_name
 from diskcache import Cache
 from pydantic import BaseModel, Field

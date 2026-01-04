@@ -224,9 +224,7 @@ def get_metadata(
     # metadata may not make sense.
     target_ds = full_dataset_name
     if use_top_of_provenance:
-        prov = ami.get_provenance(
-            scope, full_dataset_name, ignore_cache=ignore_cache
-        )
+        prov = ami.get_provenance(scope, full_dataset_name, ignore_cache=ignore_cache)
         if prov:
             target_ds = prov[-1]
 

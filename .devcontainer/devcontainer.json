@@ -10,7 +10,7 @@
 	// Bind-mount a single local file into the dev container.
 	// Adjust source path or target path as you need.
 	"mounts": [
-		"source=\\\\wsl.localhost\\atlas_al9\\tmp\\x509up_u1000,target=/tmp/x509up_u1000,type=bind,consistency=cached"
+		"source=\\\\wsl.localhost\\atlas_al9\\tmp\\x509up_u1000,target=/tmp/x509up,type=bind,consistency=cached"
 	],
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {

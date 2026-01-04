@@ -64,7 +64,7 @@ def test_get_address_for_keyword_single_keyword(mocker):
     )
 
     # Mock find_hashtag_tuples to return different complete addresses for each partial
-    def mock_find_tuples(partial_addr):
+    def mock_find_tuples(partial_addr, **kwargs):
         if partial_addr.hash_tags[0] == "ttbar":
             return [mock_complete_addr1, mock_complete_addr2]
         else:  # ttbarMET
@@ -217,7 +217,9 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
     get_address_for_keyword("mc23_13p6TeV", ["ttbar", "allhad", "baseline"])
 
     # Verify find_hashtag was called only with the first keyword
-    mocker_find_hashtag.assert_called_once_with("mc23_13p6TeV", "ttbar")
+    mocker_find_hashtag.assert_called_once_with(
+        "mc23_13p6TeV", "ttbar", ignore_cache=False
+    )
 
 
 # @pytest.mark.parametrize(

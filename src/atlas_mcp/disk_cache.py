@@ -35,20 +35,29 @@ def diskcache_decorator(expire: Optional[float] = None):
                 annotation=Any,
             )
         )
-        params.append(
-            inspect.Parameter(
-                "ignore_cache",
-                inspect.Parameter.KEYWORD_ONLY,
-                default=False,
-                annotation=bool,
+        has_ignore = "ignore_cache" in sig.parameters
+        if not has_ignore:
+            params.append(
+                inspect.Parameter(
+                    "ignore_cache",
+                    inspect.Parameter.KEYWORD_ONLY,
+                    default=False,
+                    annotation=bool,
+                )
             )
-        )
         wrapper_sig = sig.replace(parameters=params)
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             extra_cache_key = kwargs.pop("extra_cache_key", None)
-            ignore_cache = kwargs.pop("ignore_cache", False)
+            if has_ignore:
+                try:
+                    bound = sig.bind_partial(*args, **kwargs)
+                    ignore_cache = bound.arguments.get("ignore_cache", False)
+                except Exception:
+                    ignore_cache = False
+            else:
+                ignore_cache = kwargs.pop("ignore_cache", False)
             key = (func.__name__, args, tuple(sorted(kwargs.items())), extra_cache_key)
             if not ignore_cache and key in cache:
                 return cache[key]

@@ -2,6 +2,9 @@ FROM python:3.10-slim
 # FROM condaforge/miniforge3:24.11.3-2
 ARG CERTIFICATE_VERSION=1.138IGTFNEW
 
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 # RUN apt-get update -y && apt-get install gnupg2 netcat-traditional jq -y
 
 # RUN conda install --yes \
@@ -19,8 +22,10 @@ RUN export X509_CERT_DIR=/etc/grid-security/certificates/
 RUN wget https://repo.opensciencegrid.org/cadist/${CERTIFICATE_VERSION}/osg-certificates-${CERTIFICATE_VERSION}.tar.gz
 RUN tar -xvf osg-certificates-${CERTIFICATE_VERSION}.tar.gz -C /etc/grid-security/
 
-# Use existing UID 1000 user (typically 'ubuntu') and add to sudo group
-RUN usermod -aG sudo $(getent passwd 1000 | cut -d: -f1) || true
+# Create user with UID 1000
+RUN useradd -u 1000 -m -s /bin/bash MCPAtlas && \
+    usermod -aG sudo MCPAtlas && \
+    passwd -d MCPAtlas
 RUN mkdir -p /etc/grid-security/certificates /etc/grid-security/vomsdir
 
 ADD gai.conf /etc/gai.conf
@@ -42,9 +47,11 @@ ADD gai.conf /etc/gai.conf
 
 ENV PYTHONUNBUFFERED=1
 ENV X509_USER_PROXY=/tmp/x509up_u1000
+ENV HOME=/home/MCPAtlas
 
-RUN chgrp -R 0 /home/ubuntu && chmod -R g+rwX /home/ubuntu || true
-WORKDIR /home/ubuntu
+# Ensure MCPAtlas user owns their home directory
+RUN chown -R MCPAtlas:MCPAtlas /home/MCPAtlas
+WORKDIR /home/MCPAtlas
 
 # Switch to UID 1000 user
 USER 1000

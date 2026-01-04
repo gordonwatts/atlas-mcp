@@ -19,6 +19,9 @@ def get_allowed_scopes(ignore_cache: bool = False) -> str:
     """Returns a list of allowed scopes/data-taking-periods
     for the CentralPage MC Sample catalog.
 
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
+
     Returns json.
     """
     return json.dumps([s.model_dump() for s in cp.get_allowed_scopes()])
@@ -41,6 +44,9 @@ def get_addresses_for_keyword(
     If one needs samples that are alternative for for systematic comparisons, change the
     `baseline_only` parameter.
 
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
+
     Returns json
     """
     addresses = cp.get_address_for_keyword(scope, keyword, ignore_cache=ignore_cache)
@@ -57,6 +63,9 @@ def get_evtgen_for_address(
     These will be rucio dataset names, for datasets that contains the output of
     the MC generation step. All samples for this address are returned. Parse the sample
     names to find the ones required. Sample names often contain decay channels, etc.
+
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
 
     Returns json
     """
@@ -83,6 +92,9 @@ def get_samples_for_run(
     Returns the datasets and the ATLAS MC Campaigns. Those without a MC campaign should
     probably be ignored.
 
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
+
     Returns json
     """
     results = cp.get_samples_for_run(
@@ -104,6 +116,9 @@ def get_metadata(
     If ``use_top_of_provenance`` is True, the server will first resolve the
     provenance chain and fetch metadata for the top (last) dataset, typically
     the EVNT.
+
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
 
     Returns json
     """
@@ -133,6 +148,10 @@ def get_dataset_with_name(
     hashtags are returned. If ``is_central_page`` is ``False``, all matching
     EVNT datasets whose name contains ``search_str`` are returned, regardless
     of PMG / central-page hashtags.
+
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
+
     Returns json string
     """
     ds = cp.get_dataset_with_name(

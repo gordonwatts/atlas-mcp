@@ -64,7 +64,7 @@ def get_evtgen_for_address(
         raise ValueError("hashtags must be a list of 4 strings")
 
     cpa = cp.CentralPageHashAddress(scope=scope, hash_tags=tuple(hashtags))
-    samples = cp.get_evtgen_for_address(cpa, ignore_cache=ignore_cache)  # type: ignore
+    samples = cp.get_evtgen_for_address(cpa, ignore_cache=ignore_cache)
     return json.dumps(samples)
 
 
@@ -86,7 +86,7 @@ def get_samples_for_run(
     Returns json
     """
     results = cp.get_samples_for_run(
-        scope, int(run_number), data_tier, ignore_cache=ignore_cache  # type: ignore
+        scope, int(run_number), data_tier, ignore_cache=ignore_cache
     )
     return json.dumps(results)
 
@@ -111,7 +111,7 @@ def get_metadata(
         scope,
         dataset_name,
         use_top_of_provenance=use_top_of_provenance,
-        ignore_cache=ignore_cache,  # type: ignore
+        ignore_cache=ignore_cache,
     )
     return json.dumps(md)
 
@@ -136,7 +136,7 @@ def get_dataset_with_name(
     Returns json string
     """
     ds = cp.get_dataset_with_name(
-        scope, search_str, is_central_page, ignore_cache=ignore_cache  # type: ignore
+        scope, search_str, is_central_page, ignore_cache=ignore_cache
     )
     return json.dumps(ds)
 

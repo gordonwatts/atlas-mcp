@@ -54,4 +54,4 @@ RUN chown -R MCPAtlas:MCPAtlas /home/MCPAtlas
 WORKDIR /home/MCPAtlas
 
 # Switch to UID 1000 user
-USER 1000
+USER MCPAtlas

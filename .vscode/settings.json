@@ -1,6 +1,9 @@
 {
     "cSpell.words": [
+        "addinivalue",
+        "addoption",
         "allhad",
+        "autouse",
         "centralpage",
         "ctau",
         "cvmfs",
@@ -21,8 +24,10 @@
         "Herwig",
         "lsetup",
         "ltlow",
+        "modifyitems",
         "NNPDF",
         "PHYSLITE",
+        "pyami",
         "pytestmark",
         "rucio",
         "simul",

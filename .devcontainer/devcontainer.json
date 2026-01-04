@@ -11,9 +11,11 @@
 	// Adjust source path or target path as you need.
 	"mounts": [
 		"source=\\\\wsl.localhost\\atlas_al9\\tmp\\x509up_u1000,target=/tmp/x509up_u1000,type=bind,consistency=cached"
-	]
+	],
 	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
+	"features": {
+		"ghcr.io/devcontainers/features/git:1": {}
+	},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
@@ -22,4 +24,6 @@
 	// "customizations": {},
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
+	"postCreateCommand": "cd /workspaces/atlas-mcp && uv venv /tmp/venv --python=3.10 && . /tmp/venv/bin/activate && uv pip install -e .[test]",
+	"remoteUser": "MCPAtlas"
 }

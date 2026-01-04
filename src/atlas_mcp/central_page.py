@@ -1,22 +1,12 @@
-import os
-from pathlib import Path
 from typing import Any, Dict, List
 
 import ami_helper.ami as ami
 from ami_helper.datamodel import CentralPageHashAddress, get_campaign
 from ami_helper.rucio import has_files
 from ami_helper.utils import normalize_derivation_name
-from diskcache import Cache
 from pydantic import BaseModel, Field
 
-# Cache location selection:
-# - If ATLAS_MCP_CACHE_DIR environment variable is set, use it (useful for tests/CI)
-# - Otherwise default to the user's home directory under `.atlas_mcp_cache` for
-#   server/external runs.
-cache_dir = os.environ.get(
-    "ATLAS_MCP_CACHE_DIR", str(Path.home() / ".cache" / "atlas_mcp_cache")
-)
-cache = Cache(cache_dir)
+from atlas_mcp.disk_cache import diskcache_decorator
 
 
 class CentralPageScope(BaseModel):
@@ -103,7 +93,7 @@ def get_address_for_keyword(
     return matches
 
 
-@cache.memoize()
+@diskcache_decorator()
 def get_evtgen_for_address(cpa: CentralPageHashAddress) -> List[str]:
     """Returns a list of EVTGEN sample names for a given CentralPageHashAddress.
 
@@ -115,7 +105,7 @@ def get_evtgen_for_address(cpa: CentralPageHashAddress) -> List[str]:
     return dids
 
 
-@cache.memoize()
+@diskcache_decorator()
 def get_dataset_with_name(
     scope: str, search_str: str, is_central_page: bool
 ) -> List[Dict[str, str]]:
@@ -148,7 +138,7 @@ def get_dataset_with_name(
     return r_dict
 
 
-@cache.memoize()
+@diskcache_decorator()
 def get_samples_for_run(scope: str, run_number: int, derivation: str) -> Dict[str, Any]:
     """Returns a list of rucio dataset names for a given run number.
 
@@ -178,7 +168,7 @@ def get_samples_for_run(scope: str, run_number: int, derivation: str) -> Dict[st
     return info
 
 
-@cache.memoize()
+@diskcache_decorator()
 def get_metadata(
     scope: str,
     full_dataset_name: str,
@@ -218,7 +208,7 @@ def get_metadata(
     return d_meta
 
 
-@cache.memoize()
+@diskcache_decorator()
 def get_provenance(scope: str, dataset_name: str) -> List[str]:
     """Returns the provenance chain for a given dataset.
 

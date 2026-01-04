@@ -234,8 +234,7 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
 #     Ensures derivation maps to the expected flag and the ami-helper
 #     command is constructed correctly.
 #     """
-#     # Ensure cache doesn't short-circuit this test
-#     central_page_mod.cache.clear()
+#     # Use ignore_cache=True to avoid cache hits in tests.
 
 #     # Mock with valid JSON output
 #     mock_json_output = ['{"datasets": ["ds1", "ds2"]}']
@@ -247,7 +246,7 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
 #     scope = "mc23_13p6TeV"
 #     run_number = "00473423"
 
-#     result = get_samples_for_run(scope, run_number, derivation)
+#     result = get_samples_for_run(scope, run_number, derivation, ignore_cache=True)
 
 #     # Returns parsed JSON
 #     assert result == {"datasets": ["ds1", "ds2"]}
@@ -265,11 +264,12 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
 #     Note: Docstring lists 'AOD' as an example, but current code
 #     does not accept it. This documents current behavior.
 #     """
-#     # Ensure cache doesn't short-circuit this test
-#     central_page_mod.cache.clear()
+#     # Use ignore_cache=True to avoid cache hits in tests.
 
 #     with pytest.raises(RuntimeError) as excinfo:
-#         get_samples_for_run("mc23_13p6TeV", "00473423", bad_derivation)
+#         get_samples_for_run(
+#             "mc23_13p6TeV", "00473423", bad_derivation, ignore_cache=True
+#         )
 
 #     assert "Invalid `derivation`" in str(excinfo.value)
 
@@ -278,8 +278,7 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
 #     """Verify get_metadata constructs the ami-helper command correctly
 #     and parses JSON output.
 #     """
-#     # Ensure cache doesn't short-circuit this test
-#     central_page_mod.cache.clear()
+#     # Use ignore_cache=True to avoid cache hits in tests.
 
 #     # Mock the ami-helper output as JSON
 #     mock_json_output = [
@@ -302,7 +301,7 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
 #         "deriv.DAOD_PHYS.e8514_s4162_r14622_p5855"
 #     )
 
-#     result = get_metadata(scope, dataset_name)
+#     result = get_metadata(scope, dataset_name, ignore_cache=True)
 
 #     # Verify the command was constructed correctly
 #     mocked.assert_called_once_with(f"datasets metadata {scope} {dataset_name} -o json")
@@ -318,8 +317,7 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
 
 # def test_get_metadata_uses_top_of_provenance(mocker):
 #     """Verify get_metadata uses the top dataset from provenance when requested."""
-#     # Ensure cache doesn't short-circuit this test
-#     central_page_mod.cache.clear()
+#     # Use ignore_cache=True to avoid cache hits in tests.
 
 #     # Mock provenance chain (DAOD -> AOD -> HITS -> EVNT)
 #     provenance_chain = [
@@ -343,7 +341,9 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
 #         "deriv.DAOD_PHYS.e8514_s4162_r14622_p5855"
 #     )
 
-#     result = get_metadata(scope, dataset_name, use_top_of_provenance=True)
+#     result = get_metadata(
+#         scope, dataset_name, use_top_of_provenance=True, ignore_cache=True
+#     )
 
 #     # Should parse JSON and return dict
 #     assert isinstance(result, dict)
@@ -354,8 +354,7 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
 #     """Verify get_provenance constructs the ami-helper command correctly
 #     and returns a list of dataset names.
 #     """
-#     # Ensure cache doesn't short-circuit this test
-#     central_page_mod.cache.clear()
+#     # Use ignore_cache=True to avoid cache hits in tests.
 
 #     # Mock the ami-helper output as simple lines
 #     mock_output = [
@@ -375,7 +374,7 @@ def test_get_address_for_keyword_uses_first_keyword_for_ami_search(mocker):
 #         "deriv.DAOD_PHYS.e8514_s4162_r14622_p5855"
 #     )
 
-#     result = get_provenance(scope, dataset_name)
+#     result = get_provenance(scope, dataset_name, ignore_cache=True)
 
 #     # Verify the command was constructed correctly
 #     mocked.assert_called_once_with(f"datasets provenance {scope} {dataset_name}")

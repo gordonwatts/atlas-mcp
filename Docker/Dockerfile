@@ -1,17 +1,18 @@
-FROM condaforge/miniforge3:24.11.3-2
+FROM python:3.10-slim
+# FROM condaforge/miniforge3:24.11.3-2
 ARG CERTIFICATE_VERSION=1.138IGTFNEW
 
-RUN apt-get update -y && apt-get install gnupg2 netcat-traditional jq -y
+# RUN apt-get update -y && apt-get install gnupg2 netcat-traditional jq -y
 
-RUN conda install --yes \
-    -c conda-forge \
-    conda-build \
-    xrootd==5.6.9 \
-    && conda build purge-all && conda clean -ti
+# RUN conda install --yes \
+#     -c conda-forge \
+#     conda-build \
+#     xrootd==5.6.9 \
+#     && conda build purge-all && conda clean -ti
 
 RUN apt update && \
     apt upgrade -y && \
-    apt install -y sudo
+    apt install -y sudo wget
 
 RUN mkdir -p /etc/grid-security/
 RUN export X509_CERT_DIR=/etc/grid-security/certificates/

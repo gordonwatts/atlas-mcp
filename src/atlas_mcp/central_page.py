@@ -61,7 +61,9 @@ def get_allowed_scopes() -> List[CentralPageScope]:
 
 
 def get_address_for_keyword(
-    scope: str, keywords: str | List[str]
+    scope: str,
+    keywords: str | List[str],
+    ignore_cache: bool = False,
 ) -> List[CentralPageHashAddress]:
     """Returns a CentralPageHashAddress object for a given scope and keyword.
 
@@ -73,6 +75,7 @@ def get_address_for_keyword(
         scope (str): Scope name
         keyword (str): Keyword to search for in hash tags
     """
+    del ignore_cache
 
     if isinstance(keywords, str):
         keywords = [keywords]

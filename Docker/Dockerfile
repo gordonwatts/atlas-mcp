@@ -18,7 +18,8 @@ RUN export X509_CERT_DIR=/etc/grid-security/certificates/
 RUN wget https://repo.opensciencegrid.org/cadist/${CERTIFICATE_VERSION}/osg-certificates-${CERTIFICATE_VERSION}.tar.gz
 RUN tar -xvf osg-certificates-${CERTIFICATE_VERSION}.tar.gz -C /etc/grid-security/
 
-RUN useradd -ms /bin/bash output -G sudo && passwd -d output
+# Use existing UID 1000 user (typically 'ubuntu') and add to sudo group
+RUN usermod -aG sudo $(getent passwd 1000 | cut -d: -f1) || true
 RUN mkdir -p /etc/grid-security/certificates /etc/grid-security/vomsdir
 
 ADD gai.conf /etc/gai.conf
@@ -38,7 +39,11 @@ ADD gai.conf /etc/gai.conf
 # COPY proxy-exporter.sh .
 # RUN chmod +x proxy-exporter.sh
 
-# ENV PYTHONUNBUFFERED=1
-# ENV X509_USER_PROXY=/tmp/grid-security/x509up
+ENV PYTHONUNBUFFERED=1
+ENV X509_USER_PROXY=/tmp/x509up_u1000
 
-# RUN chgrp -R 0 /home/output && chmod -R g+rwX /home/output
+RUN chgrp -R 0 /home/ubuntu && chmod -R g+rwX /home/ubuntu || true
+WORKDIR /home/ubuntu
+
+# Switch to UID 1000 user
+USER 1000

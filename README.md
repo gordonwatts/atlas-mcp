@@ -69,6 +69,14 @@ Use `fastmcp dev src/atlas_mcp/server.py` to run locally with the test web inter
 uv run pytest
 ```
 
+Integration tests that hit real AMI/Central Page services are gated behind a flag:
+
+```bash
+uv run pytest --integration
+```
+
+These require ATLAS credentials and a valid `voms-proxy-init` session on a host with `/cvmfs`.
+
 ## Sample Run in `vscode`
 
 This was kicked off with `/data all-hadronic ttbar`.

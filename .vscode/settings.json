@@ -23,6 +23,7 @@
         "ltlow",
         "NNPDF",
         "PHYSLITE",
+        "pytestmark",
         "rucio",
         "simul",
         "streamable",

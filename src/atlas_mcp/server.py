@@ -2,13 +2,13 @@ import json
 from typing import List
 
 import typer
-from ami_helper.utils import ensure_and_import
+from ami_helper.utils import ensure_setup
 from fastmcp import FastMCP
 
 import atlas_mcp.central_page as cp
 
 # Make sure installation has completed
-ensure_and_import("pyAMI_atlas")
+ensure_setup()
 
 # Create the fast mcp server
 mcp = FastMCP("atlas_standard_MonteCarlo_catalog")

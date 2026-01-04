@@ -142,10 +142,14 @@ def test_get_metadata_tool(mocker):
     scope = "mc23_13p6TeV"
     dataset = "mc23_13p6TeV.123456.Pythia8...DAOD_PHYS.e8514_s4162_r14622_p5855"
     # Access the underlying function from the FunctionTool
-    result = server.get_metadata.fn(scope, dataset, use_top_of_provenance=True)
+    result = server.get_metadata.fn(
+        scope, dataset, use_top_of_provenance=True, ignore_cache=True
+    )
 
     parsed = json.loads(result)
     assert parsed["Physics Comment"] == "NULL"
     assert parsed["Physics Short Name"] == "Py8EG_A14NNPDF23LO_jj_JZ9incl"
 
-    mocked.assert_called_once_with(scope, dataset, use_top_of_provenance=True)
+    mocked.assert_called_once_with(
+        scope, dataset, use_top_of_provenance=True, ignore_cache=True
+    )

@@ -15,9 +15,12 @@ mcp = FastMCP("atlas_standard_MonteCarlo_catalog")
 
 
 @mcp.tool()
-def get_allowed_scopes() -> str:
+def get_allowed_scopes(ignore_cache: bool = False) -> str:
     """Returns a list of allowed scopes/data-taking-periods
     for the CentralPage MC Sample catalog.
+
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
 
     Returns json.
     """
@@ -26,7 +29,7 @@ def get_allowed_scopes() -> str:
 
 @mcp.tool()
 def get_addresses_for_keyword(
-    scope: str, keyword: str, baseline_only: bool = True
+    scope: str, keyword: str, baseline_only: bool = True, ignore_cache: bool = False
 ) -> str:
     """Searches the PMG group's Standard Model Monte Carlo datasets for a hashtag that
     contains `keyword`. Only hashtags in `scope` are considered. Full 4-tuples hashtags
@@ -41,20 +44,28 @@ def get_addresses_for_keyword(
     If one needs samples that are alternative for for systematic comparisons, change the
     `baseline_only` parameter.
 
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
+
     Returns json
     """
-    addresses = cp.get_address_for_keyword(scope, keyword)
+    addresses = cp.get_address_for_keyword(scope, keyword, ignore_cache=ignore_cache)
     if baseline_only:
         addresses = [addr for addr in addresses if addr.hash_tags[2] == "Baseline"]
     return json.dumps([addr.to_dict() for addr in addresses])
 
 
 @mcp.tool()
-def get_evtgen_for_address(scope: str, hashtags: List[str]) -> str:
+def get_evtgen_for_address(
+    scope: str, hashtags: List[str], ignore_cache: bool = False
+) -> str:
     """Returns a list of event generator (evtgen) sample names for a given CentralPageAddress.
     These will be rucio dataset names, for datasets that contains the output of
     the MC generation step. All samples for this address are returned. Parse the sample
     names to find the ones required. Sample names often contain decay channels, etc.
+
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
 
     Returns json
     """
@@ -62,12 +73,14 @@ def get_evtgen_for_address(scope: str, hashtags: List[str]) -> str:
         raise ValueError("hashtags must be a list of 4 strings")
 
     cpa = cp.CentralPageHashAddress(scope=scope, hash_tags=tuple(hashtags))
-    samples = cp.get_evtgen_for_address(cpa)
+    samples = cp.get_evtgen_for_address(cpa, ignore_cache=ignore_cache)
     return json.dumps(samples)
 
 
 @mcp.tool()
-def get_samples_for_run(scope: str, run_number: str, data_tier: str) -> str:
+def get_samples_for_run(
+    scope: str, run_number: str, data_tier: str, ignore_cache: bool = False
+) -> str:
     """Returns a list of rucio dataset names of a particular data_tier for a given EVTGEN sample
     and scope.
 
@@ -79,15 +92,23 @@ def get_samples_for_run(scope: str, run_number: str, data_tier: str) -> str:
     Returns the datasets and the ATLAS MC Campaigns. Those without a MC campaign should
     probably be ignored.
 
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
+
     Returns json
     """
-    results = cp.get_samples_for_run(scope, int(run_number), data_tier)
+    results = cp.get_samples_for_run(
+        scope, int(run_number), data_tier, ignore_cache=ignore_cache
+    )
     return json.dumps(results)
 
 
 @mcp.tool()
 def get_metadata(
-    scope: str, dataset_name: str, use_top_of_provenance: bool = False
+    scope: str,
+    dataset_name: str,
+    use_top_of_provenance: bool = False,
+    ignore_cache: bool = False,
 ) -> str:
     """Returns metadata for a given dataset as JSON. This includes cross section,
     generator filter efficiency, physics short name, etc.
@@ -96,16 +117,27 @@ def get_metadata(
     provenance chain and fetch metadata for the top (last) dataset, typically
     the EVNT.
 
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
+
     Returns json
     """
     md = cp.get_metadata(
-        scope, dataset_name, use_top_of_provenance=use_top_of_provenance
+        scope,
+        dataset_name,
+        use_top_of_provenance=use_top_of_provenance,
+        ignore_cache=ignore_cache,
     )
     return json.dumps(md)
 
 
 @mcp.tool()
-def get_dataset_with_name(scope: str, search_str: str, is_central_page: bool) -> str:
+def get_dataset_with_name(
+    scope: str,
+    search_str: str,
+    is_central_page: bool,
+    ignore_cache: bool = False,
+) -> str:
     """Searches AMI for all EVNT tier datasets whose name contains `search_str`.
 
     If you know you are looking for a standard model dataset, ``is_central_page``
@@ -116,9 +148,15 @@ def get_dataset_with_name(scope: str, search_str: str, is_central_page: bool) ->
     hashtags are returned. If ``is_central_page`` is ``False``, all matching
     EVNT datasets whose name contains ``search_str`` are returned, regardless
     of PMG / central-page hashtags.
+
+    `ignore_cache` can be set to True to bypass the cache - but should
+    only be done if explicitly requested (or for testing).
+
     Returns json string
     """
-    ds = cp.get_dataset_with_name(scope, search_str, is_central_page)
+    ds = cp.get_dataset_with_name(
+        scope, search_str, is_central_page, ignore_cache=ignore_cache
+    )
     return json.dumps(ds)
 
 

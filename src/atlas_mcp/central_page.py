@@ -1,22 +1,12 @@
-import os
-from pathlib import Path
 from typing import Any, Dict, List
 
 import ami_helper.ami as ami
 from ami_helper.datamodel import CentralPageHashAddress, get_campaign
 from ami_helper.rucio import has_files
 from ami_helper.utils import normalize_derivation_name
-from diskcache import Cache
 from pydantic import BaseModel, Field
 
-# Cache location selection:
-# - If ATLAS_MCP_CACHE_DIR environment variable is set, use it (useful for tests/CI)
-# - Otherwise default to the user's home directory under `.atlas_mcp_cache` for
-#   server/external runs.
-cache_dir = os.environ.get(
-    "ATLAS_MCP_CACHE_DIR", str(Path.home() / ".cache" / "atlas_mcp_cache")
-)
-cache = Cache(cache_dir)
+from atlas_mcp.disk_cache import diskcache_decorator
 
 
 class CentralPageScope(BaseModel):
@@ -71,7 +61,9 @@ def get_allowed_scopes() -> List[CentralPageScope]:
 
 
 def get_address_for_keyword(
-    scope: str, keywords: str | List[str]
+    scope: str,
+    keywords: str | List[str],
+    ignore_cache: bool = False,
 ) -> List[CentralPageHashAddress]:
     """Returns a CentralPageHashAddress object for a given scope and keyword.
 
@@ -83,15 +75,20 @@ def get_address_for_keyword(
         scope (str): Scope name
         keyword (str): Keyword to search for in hash tags
     """
-
     if isinstance(keywords, str):
         keywords = [keywords]
 
     # Fetch the info from AMI (which is where central_page gets
     # the info from) for any of the hash tags that fit this search
     # string, and then fill in the partial list.
-    partial_hashtag_list = ami.find_hashtag(scope, keywords[0])
-    ca_list = [t for ht in partial_hashtag_list for t in ami.find_hashtag_tuples(ht)]
+    partial_hashtag_list = ami.find_hashtag(
+        scope, keywords[0], ignore_cache=ignore_cache
+    )
+    ca_list = [
+        t
+        for ht in partial_hashtag_list
+        for t in ami.find_hashtag_tuples(ht, ignore_cache=ignore_cache)
+    ]
 
     def has_keyword(addr: CentralPageHashAddress, keyword: str) -> bool:
         return any(
@@ -103,21 +100,26 @@ def get_address_for_keyword(
     return matches
 
 
-@cache.memoize()
-def get_evtgen_for_address(cpa: CentralPageHashAddress) -> List[str]:
+@diskcache_decorator()
+def get_evtgen_for_address(
+    cpa: CentralPageHashAddress, ignore_cache: bool = False
+) -> List[str]:
     """Returns a list of EVTGEN sample names for a given CentralPageHashAddress.
 
     Args:
         cpa (CentralPageHashAddress): CentralPageHashAddress object
     """
 
-    dids = ami.find_dids_with_hashtags(cpa)
+    dids = ami.find_dids_with_hashtags(cpa, ignore_cache=ignore_cache)
     return dids
 
 
-@cache.memoize()
+@diskcache_decorator()
 def get_dataset_with_name(
-    scope: str, search_str: str, is_central_page: bool
+    scope: str,
+    search_str: str,
+    is_central_page: bool,
+    ignore_cache: bool = False,
 ) -> List[Dict[str, str]]:
     """Returns a list of EVTGEN sample names and tags that contain the given search string
     as a list of dictionaries.
@@ -132,7 +134,12 @@ def get_dataset_with_name(
         dataset, and the name and hash tags are included.
     """
 
-    ds = ami.find_dids_with_name(scope, search_str, require_pmg=is_central_page)
+    ds = ami.find_dids_with_name(
+        scope,
+        search_str,
+        require_pmg=is_central_page,
+        ignore_cache=ignore_cache,
+    )
 
     r_dict = [
         {
@@ -148,8 +155,13 @@ def get_dataset_with_name(
     return r_dict
 
 
-@cache.memoize()
-def get_samples_for_run(scope: str, run_number: int, derivation: str) -> Dict[str, Any]:
+@diskcache_decorator()
+def get_samples_for_run(
+    scope: str,
+    run_number: int,
+    derivation: str,
+    ignore_cache: bool = False,
+) -> Dict[str, Any]:
     """Returns a list of rucio dataset names for a given run number.
 
     Args:
@@ -160,7 +172,9 @@ def get_samples_for_run(scope: str, run_number: int, derivation: str) -> Dict[st
 
     # Get all the datasets that match, make sure that they have files.
     derivation_flag = normalize_derivation_name(derivation)
-    ds_list = ami.get_by_datatype(scope, run_number, derivation_flag)
+    ds_list = ami.get_by_datatype(
+        scope, run_number, derivation_flag, ignore_cache=ignore_cache
+    )
     good_ds = [ds for ds in ds_list if has_files(scope, ds)]
 
     # Get the campaign for each dataset.
@@ -178,11 +192,12 @@ def get_samples_for_run(scope: str, run_number: int, derivation: str) -> Dict[st
     return info
 
 
-@cache.memoize()
+@diskcache_decorator()
 def get_metadata(
     scope: str,
     full_dataset_name: str,
     use_top_of_provenance: bool = False,
+    ignore_cache: bool = False,
 ) -> Dict[str, Any]:
     """Returns metadata for a given dataset.
 
@@ -209,17 +224,21 @@ def get_metadata(
     # metadata may not make sense.
     target_ds = full_dataset_name
     if use_top_of_provenance:
-        prov = ami.get_provenance(scope, full_dataset_name)
+        prov = ami.get_provenance(
+            scope, full_dataset_name, ignore_cache=ignore_cache
+        )
         if prov:
             target_ds = prov[-1]
 
-    d_meta = ami.get_metadata(scope, target_ds)
+    d_meta = ami.get_metadata(scope, target_ds, ignore_cache=ignore_cache)
 
     return d_meta
 
 
-@cache.memoize()
-def get_provenance(scope: str, dataset_name: str) -> List[str]:
+@diskcache_decorator()
+def get_provenance(
+    scope: str, dataset_name: str, ignore_cache: bool = False
+) -> List[str]:
     """Returns the provenance chain for a given dataset.
 
     Returns all the datasets from the current one back to the original EVNT file.
@@ -232,6 +251,6 @@ def get_provenance(scope: str, dataset_name: str) -> List[str]:
         List[str]: List of dataset names in the provenance chain, one per line
     """
 
-    ds_list = ami.get_provenance(scope, dataset_name)
+    ds_list = ami.get_provenance(scope, dataset_name, ignore_cache=ignore_cache)
 
     return ds_list
